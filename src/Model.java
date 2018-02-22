@@ -1,9 +1,21 @@
 
 import java.util.*;
+import java.awt.Color;
 
 public class Model {
+
+    public enum drawingModeType {
+        FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
+    }
+
     /** The observers that are watching this model for changes. */
     private List<Observer> observers;
+
+    public Boolean drawMode = false; // true for Draw mode, false for Select mode
+    public drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
+    public int strokeThickness = 1;
+    public Color fillColor = Color.WHITE;
+    public Color strokeColor = Color.BLACK;
 
     /**
      * Create a new model.
