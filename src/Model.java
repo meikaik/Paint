@@ -11,11 +11,56 @@ public class Model {
     /** The observers that are watching this model for changes. */
     private List<Observer> observers;
 
-    public Boolean drawMode = false; // true for Draw mode, false for Select mode
-    public drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
-    public int strokeThickness = 1;
-    public Color fillColor = Color.WHITE;
-    public Color strokeColor = Color.BLACK;
+    private Boolean drawMode = true; // true for Draw mode, false for Select mode
+    private drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
+    private int strokeThickness = 1;
+    private Color fillColor = Color.WHITE;
+    private Color strokeColor = Color.BLACK;
+
+    public Boolean getDrawMode() {
+        return drawMode;
+    }
+
+    public void setDrawMode() {
+        drawMode = !drawMode;
+        notifyObservers();
+    }
+
+    public drawingModeType getDrawingMode() {
+        return drawingMode;
+    }
+
+    public void setDrawingMode(drawingModeType mode) {
+        drawingMode = mode;
+        notifyObservers();
+    }
+
+    public int getStrokeThickness() {
+        return strokeThickness;
+    }
+
+    public void setStrokeThickness(int thickness) {
+        strokeThickness = thickness;
+        notifyObservers();
+    }
+
+    public Color getFillColor() {
+        return fillColor;
+    }
+
+    public void setFillColor(Color color) {
+        fillColor = color;
+        notifyObservers();
+    }
+
+    public Color getStrokeColor() {
+        return strokeColor;
+    }
+
+    public void setStrokeColor(Color color) {
+        strokeColor = color;
+        notifyObservers();
+    }
 
     /**
      * Create a new model.
