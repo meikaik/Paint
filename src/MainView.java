@@ -3,6 +3,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.swing.*;
 import java.awt.event.*;
+import java.util.Enumeration;
+
 
 public class MainView extends JFrame implements Observer {
 
@@ -12,6 +14,19 @@ public class MainView extends JFrame implements Observer {
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
     private BufferedImage strokeColorImage =
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+    // Menubar
+    private JRadioButtonMenuItem selectionMode;
+    private JRadioButtonMenuItem drawingMode;
+    private JMenuItem deleteShape;
+    private JMenuItem transformShape;
+    private JMenu strokeWidth;
+
+    // Toolbar
+    private JButton selectButton;
+    private JButton drawButton;
+    private JComboBox drawingModes;
+    private JComboBox strokes;
 
     /**
      * Create a new View.
@@ -40,6 +55,19 @@ public class MainView extends JFrame implements Observer {
         // XXX Fill this in with the logic for updating the view when the model
         // changes.
         System.out.println("Model changed!");
+
+        // Update draw modes
+        System.out.println("Draw mode? " + model.getDrawMode());
+        selectButton.setSelected(!model.getDrawMode());
+        selectionMode.setSelected(!model.getDrawMode());
+        drawButton.setSelected(model.getDrawMode());
+        drawingMode.setSelected(model.getDrawMode());
+        deleteShape.setEnabled(!model.getDrawMode());
+        transformShape.setEnabled(!model.getDrawMode());
+
+        // Update stroke width
+        strokeWidth.getItem(model.getStrokeThickness() - 1).setSelected(true);
+        strokes.setSelectedIndex(model.getStrokeThickness() - 1);
     }
 
     private void createMenuBar() {
@@ -64,6 +92,11 @@ public class MainView extends JFrame implements Observer {
         new1.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_N, ActionEvent.CTRL_MASK));
         JMenuItem exit = new JMenuItem("Exit");
         exit.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
+        exit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
         file.add(new1);
         file.add(exit);
         return file;
@@ -72,26 +105,25 @@ public class MainView extends JFrame implements Observer {
     private JMenu createEditMenu() {
         JMenu edit = new JMenu("Edit");
         ButtonGroup radiogroup = new ButtonGroup();
-        JRadioButtonMenuItem selectionMode = new JRadioButtonMenuItem("Selection Mode");
+        selectionMode = new JRadioButtonMenuItem("Selection Mode");
         selectionMode.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_S, ActionEvent.CTRL_MASK));
         radiogroup.add(selectionMode);
 
-        JRadioButtonMenuItem drawingMode = new JRadioButtonMenuItem("Drawing Mode", true);
+        drawingMode = new JRadioButtonMenuItem("Drawing Mode", true);
         drawingMode.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_D, ActionEvent.CTRL_MASK));
         radiogroup.add(drawingMode);
 
-        JMenuItem deleteShape = new JMenuItem("Delete Shape");
+        deleteShape = new JMenuItem("Delete Shape");
         deleteShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_DELETE, 0));
-        JMenuItem transformShape = new JMenuItem("Transform Shape");
+        transformShape = new JMenuItem("Transform Shape");
         transformShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_T, ActionEvent.CTRL_MASK));
+        deleteShape.setEnabled(false);
+        transformShape.setEnabled(false);
 
         selectionMode.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if (model.getDrawMode()) {
                     model.setDrawMode();
-                    System.out.println("Select mode");
-                    deleteShape.setEnabled(true);
-                    transformShape.setEnabled(true);
                 }
             }
         });
@@ -100,10 +132,6 @@ public class MainView extends JFrame implements Observer {
             public void actionPerformed(ActionEvent e){
                 if (!model.getDrawMode()) {
                     model.setDrawMode();
-                    System.out.println("Draw mode");
-                    deleteShape.setEnabled(false);
-                    transformShape.setEnabled(false);
-
                 }
             }
         });
@@ -129,11 +157,25 @@ public class MainView extends JFrame implements Observer {
     }
 
     private JMenu addStrokeWidthMenuItem() {
-        JMenu strokeWidth = new JMenu("Stroke Width");
+        strokeWidth = new JMenu("Stroke Width");
         String[] strokeThickness = { "1px", "2px", "3px", "4px", "5px", "6px", "7px", "8px", "9px", "10px" };
+        ButtonGroup strokes = new ButtonGroup();
+
+        ActionListener radioActionListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                AbstractButton button = (AbstractButton) e.getSource();
+                updateStrokeThickness(button.getText());
+            }
+        };
+
         for (String stroke : strokeThickness) {
-            strokeWidth.add(stroke);
+            JRadioButtonMenuItem temp = new JRadioButtonMenuItem(stroke);
+            strokes.add(temp);
+            strokeWidth.add(temp);
+            temp.addActionListener(radioActionListener);
         }
+        strokeWidth.getItem(0).setSelected(true);
+
         return strokeWidth;
     }
 
@@ -175,18 +217,14 @@ public class MainView extends JFrame implements Observer {
 
         ImageIcon cursor = new ImageIcon("src/icons/cursor.png");
         ImageIcon paintBrush = new ImageIcon("src/icons/paintbrush.png");
-        JButton selectButton = new JButton("Select", cursor);
-        JButton drawButton = new JButton("Draw", paintBrush);
+        selectButton = new JButton("Select", cursor);
+        drawButton = new JButton("Draw", paintBrush);
         drawButton.setSelected(true);
 
         selectButton.addActionListener(new ActionListener(){
              public void actionPerformed(ActionEvent e){
                 if (model.getDrawMode()) {
                     model.setDrawMode();
-                    System.out.println("Select mode");
-                    selectButton.setSelected(true);
-                    drawButton.setSelected(false);
-
                 }
             }
         });
@@ -195,16 +233,12 @@ public class MainView extends JFrame implements Observer {
             public void actionPerformed(ActionEvent e){
                 if (!model.getDrawMode()) {
                     model.setDrawMode();
-                    System.out.println("Draw mode");
-                    selectButton.setSelected(false);
-                    drawButton.setSelected(true);
-
                 }
             }
         });
 
-        JComboBox drawingModes = addDrawingModesDropdown();
-        JComboBox strokes = addStrokesDropdown();
+        drawingModes = addDrawingModesDropdown();
+        strokes = addStrokesDropdown();
         JButton fillColor = addFillColorButton();
         JButton strokeColor = addStrokeColorButton();
 
@@ -245,18 +279,21 @@ public class MainView extends JFrame implements Observer {
 
     private JComboBox addStrokesDropdown() {
         String[] strokeThickness = { "1px", "2px", "3px", "4px", "5px", "6px", "7px", "8px", "9px", "10px" };
-        JComboBox strokes = new JComboBox(strokeThickness);
-        strokes.addActionListener(new ActionListener() {
+        JComboBox strokes = new JComboBox<>(strokeThickness);
+        strokes.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
-                String selectedStrokeThickness = (String) strokes.getSelectedItem();
-                if ("10px" == selectedStrokeThickness) {
-                    model.setStrokeThickness(10);
+                // TODO: refactor
+                String temp = (String) strokes.getSelectedItem();
+                int tempp = 0;
+                if (temp == "10px") {
+                    tempp = 10;
                 }
                 else {
-                    int val = Character.getNumericValue(selectedStrokeThickness.charAt(0));
-                    model.setStrokeThickness(val);
+                    tempp = Character.getNumericValue(temp.charAt(0));
                 }
-                System.out.println("Stroke thickness is now: " + model.getStrokeThickness());
+                if ( model.getStrokeThickness() != tempp) {
+                    updateStrokeThickness(temp);
+                }
             }
         });
         return strokes;
@@ -292,6 +329,16 @@ public class MainView extends JFrame implements Observer {
             }
         });
         return strokeColor;
+    }
+
+    private void updateStrokeThickness(String selectedStrokeThickness) {
+        if ("10px" == selectedStrokeThickness) {
+            model.setStrokeThickness(10);
+        }
+        else {
+            int val = Character.getNumericValue(selectedStrokeThickness.charAt(0));
+            model.setStrokeThickness(val);
+        }
     }
 
     private ImageIcon changeColor(BufferedImage image, Color color){
