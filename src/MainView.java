@@ -2,14 +2,13 @@
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.event.*;
-import java.util.Enumeration;
 
 
 public class MainView extends JFrame implements Observer {
 
     private Model model;
-    private boolean toggled = false;
     private BufferedImage fillColorImage =
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
     private BufferedImage strokeColorImage =
@@ -45,7 +44,7 @@ public class MainView extends JFrame implements Observer {
 
         createMenuBar();
         createToolBar();
-
+        add(new Canvas(model), BorderLayout.CENTER);
         setVisible(true);
     }
     /**

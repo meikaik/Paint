@@ -1,6 +1,8 @@
 
 import java.util.*;
 import java.awt.Color;
+import java.awt.Shape;
+import java.awt.Point;
 
 public class Model {
 
@@ -11,11 +13,21 @@ public class Model {
     /** The observers that are watching this model for changes. */
     private List<Observer> observers;
 
+    // User selected menubar/toolbar options
     private Boolean drawMode = true; // true for Draw mode, false for Select mode
     private drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
     private int strokeThickness = 1;
     private Color fillColor = Color.WHITE;
     private Color strokeColor = Color.BLACK;
+
+    // Canvas
+    public List<Shape> shapes = new ArrayList<>();
+    public List<Integer> strokeWidths = new ArrayList<>();
+    public List<Color> fillColors = new ArrayList<>();
+    public List<Color> strokeColors = new ArrayList<>();
+    public Point clickBegin, clickEnd;
+
+    public List<List<Point>> freeHands = new ArrayList<>();
 
     public Boolean getDrawMode() {
         return drawMode;
