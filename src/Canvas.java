@@ -17,9 +17,9 @@ public class Canvas extends JComponent implements Observer {
 
         this.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
+                model.clickBegin = e.getPoint();
+                model.clickEnd = model.clickBegin;
                 if (model.getDrawMode()) {
-                    model.clickBegin = new Point(e.getX(), e.getY());
-                    model.clickEnd = model.clickBegin;
                     if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
                         java.util.List<Point> freeHandPoints = new ArrayList<>();
                         freeHandPoints.add(model.clickBegin);
@@ -32,6 +32,35 @@ public class Canvas extends JComponent implements Observer {
                         model.canvasShapes.add(cs);
                     }
                     repaint();
+                }
+                else {
+                    for (Model.CanvasShape cs : model.canvasShapes) {
+                        if (cs.shape != null) {
+                            if (cs.shape instanceof Line2D.Float) {
+                                double d2 = ((Line2D.Float) cs.shape).ptLineDist(model.clickBegin);
+                                if (d2 < 5 + model.getStrokeThickness()) {
+                                    System.out.println("HIT STRAIGHT LINE");
+                                }
+                            }
+                            if (polyHitTest(cs.shape, model.clickBegin, 5 + model.getStrokeThickness())) {
+                                System.out.println("HIT shape!");
+                            }
+                        }
+                        else if (cs.freeHandPoints != null) {
+                            for (int i = 0; i < cs.freeHandPoints.size() - 1; i+=2) {
+                                double d2 = Line2D.ptSegDist(
+                                        cs.freeHandPoints.get(i).x,
+                                        cs.freeHandPoints.get(i).y,
+                                        cs.freeHandPoints.get(i + 1).x,
+                                        cs.freeHandPoints.get(i + 1).y,
+                                        model.clickBegin.x,
+                                        model.clickBegin.y);
+                                if (d2 < 5 + model.getStrokeThickness()) {
+                                    System.out.println("HIT FREEFORM");
+                                }
+                            }
+                        }
+                    }
                 }
                 System.out.println("mouse pressed");
             }
@@ -74,7 +103,7 @@ public class Canvas extends JComponent implements Observer {
 
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseDragged(MouseEvent e) {
-                model.clickEnd = new Point(e.getX(), e.getY());
+                model.clickEnd = e.getPoint();
                 if (model.getDrawMode()) {
                     if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
                         // Add the intermediate point to the freeform point model
@@ -93,17 +122,18 @@ public class Canvas extends JComponent implements Observer {
 
     public void paint(Graphics g) {
         System.out.println("Paint called");
-        Graphics2D gc = (Graphics2D) g;
-        // Smoothen lines
-        gc.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Graphics2D g2 = (Graphics2D) g;
+        // antiliasing
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
 
         for (Model.CanvasShape cs : model.canvasShapes) {
-            gc.setStroke(new BasicStroke(cs.strokeWidth));
-            gc.setPaint(cs.strokeColor);
+            g2.setStroke(new BasicStroke(cs.strokeWidth));
+            g2.setPaint(cs.strokeColor);
             if (cs.shape != null) {
-                gc.draw(cs.shape);
-                gc.setPaint(cs.fillColor);
-                gc.fill(cs.shape);
+                g2.draw(cs.shape);
+                g2.setPaint(cs.fillColor);
+                g2.fill(cs.shape);
             }
             else {
                 // draw the Freeform line
@@ -120,19 +150,19 @@ public class Canvas extends JComponent implements Observer {
 
         if (model.clickBegin != null && model.clickEnd != null) {
             // draw a semi transparent line
-            gc.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
-            gc.setPaint(Color.GRAY);
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+            g2.setPaint(Color.GRAY);
             float[] dashPattern = {3.0f, 3.0f};
-            gc.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, dashPattern, 3.0f));
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1.0f, dashPattern, 3.0f));
             switch (model.getDrawingMode()) {
                 case ELLIPSE:
-                    gc.draw(drawEllipse(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
+                    g2.draw(drawEllipse(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
                     break;
                 case RECTANGLE:
-                    gc.draw(drawRectangle(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
+                    g2.draw(drawRectangle(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
                     break;
                 case STRAIGHT:
-                    gc.draw(drawLine(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
+                    g2.draw(drawLine(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
                     break;
                 // We don't need a preview for FREEFORM
             }
@@ -158,4 +188,15 @@ public class Canvas extends JComponent implements Observer {
         return new Line2D.Float(x1, y1, x2, y2);
     }
 
+    private Boolean polyHitTest(Shape s, Point mouse, int threshold) {
+        return s.contains(mouse.x, mouse.y) ||
+                s.contains(mouse.x + threshold, mouse.y) ||
+                s.contains(mouse.x, mouse.y + threshold) ||
+                s.contains(mouse.x - threshold, mouse.y) ||
+                s.contains(mouse.x, mouse.y - threshold) ||
+                s.contains(mouse.x + threshold, mouse.y + threshold) ||
+                s.contains(mouse.x - threshold, mouse.y - threshold) ||
+                s.contains(mouse.x + threshold, mouse.y - threshold) ||
+                s.contains(mouse.x - threshold, mouse.y + threshold);
+    }
 }
