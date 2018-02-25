@@ -17,49 +17,73 @@ public class Canvas extends JComponent implements Observer {
 
         this.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
-                if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
-                    model.freeHands.add(Arrays.asList(new Point(e.getX(), e.getY())));
+                if (model.getDrawMode()) {
+                    model.clickBegin = new Point(e.getX(), e.getY());
+                    model.clickEnd = model.clickBegin;
+                    if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
+                        java.util.List<Point> freeHandPoints = new ArrayList<>();
+                        freeHandPoints.add(model.clickBegin);
+                        Model.CanvasShape cs = new Model.CanvasShape(
+                                freeHandPoints,
+                                model.getDrawingMode(),
+                                model.getFillColor(),
+                                model.getStrokeColor(),
+                                model.getStrokeThickness());
+                        model.canvasShapes.add(cs);
+                    }
+                    repaint();
                 }
-                model.clickBegin = new Point(e.getX(), e.getY());
-                model.clickEnd = model.clickBegin;
                 System.out.println("mouse pressed");
-                repaint();
             }
 
             public void mouseReleased(MouseEvent e) {
-                Shape shape = null;
-                switch (model.getDrawingMode()) {
-                    case ELLIPSE:
-                        shape = drawEllipse(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y);
-                        break;
-                    case RECTANGLE:
-                        shape = drawRectangle(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y);
-                        break;
-                    case STRAIGHT:
-                        shape = drawLine(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y);
+                if (model.getDrawMode()) {
+                    Shape shape = null;
+                    switch (model.getDrawingMode()) {
+                        case ELLIPSE:
+                            shape = drawEllipse(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y);
+                            break;
+                        case RECTANGLE:
+                            shape = drawRectangle(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y);
+                            break;
+                        case STRAIGHT:
+                            shape = drawLine(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y);
+                            break;
+                        case FREEFORM:
+                            model.canvasShapes.get(model.canvasShapesSize).freeHandPoints.add(model.clickEnd);
+                            break;
 
+                    }
+                    if (model.getDrawingMode() != Model.drawingModeType.FREEFORM) {
+                        Model.CanvasShape cs = new Model.CanvasShape(
+                                shape,
+                                model.getDrawingMode(),
+                                model.getFillColor(),
+                                model.getStrokeColor(),
+                                model.getStrokeThickness());
+                        model.canvasShapes.add(cs);
+                    }
+                    model.canvasShapesSize++;
+                    repaint();
                 }
-                    model.shapes.add(shape);
-                    model.fillColors.add(model.getFillColor());
-                    model.strokeColors.add(model.getStrokeColor());
-                    model.strokeWidths.add(model.getStrokeThickness());
-                    model.clickBegin = null;
-                    model.clickEnd = null;
-                    System.out.println("mouse released");
-
-                repaint();
-
+                model.clickBegin = null;
+                model.clickEnd = null;
+                System.out.println("mouse released");
             }
         });
 
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseDragged(MouseEvent e) {
-                if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
-
-                }
                 model.clickEnd = new Point(e.getX(), e.getY());
+                if (model.getDrawMode()) {
+                    if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
+                        // Add the intermediate point to the freeform point model
+                        model.canvasShapes.get(model.canvasShapesSize).freeHandPoints.add(model.clickEnd);
+
+                    }
+                    repaint();
+                }
                 System.out.println("mouse dragged");
-                repaint();
             }
         });
 
@@ -70,17 +94,28 @@ public class Canvas extends JComponent implements Observer {
     public void paint(Graphics g) {
         System.out.println("Paint called");
         Graphics2D gc = (Graphics2D) g;
-
-        Iterator<Color> stroke = model.strokeColors.iterator();
-        Iterator<Integer> strokeWidth = model.strokeWidths.iterator();
-        Iterator<Color> fill = model.fillColors.iterator();
+        // Smoothen lines
         gc.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        for (Shape s : model.shapes) {
-            gc.setStroke(new BasicStroke(strokeWidth.next()));
-            gc.setPaint(stroke.next());
-            gc.draw(s);
-            gc.setPaint(fill.next());
-            gc.fill(s);
+
+        for (Model.CanvasShape cs : model.canvasShapes) {
+            gc.setStroke(new BasicStroke(cs.strokeWidth));
+            gc.setPaint(cs.strokeColor);
+            if (cs.shape != null) {
+                gc.draw(cs.shape);
+                gc.setPaint(cs.fillColor);
+                gc.fill(cs.shape);
+            }
+            else {
+                // draw the Freeform line
+                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
+                    g.drawLine(
+                            cs.freeHandPoints.get(i).x,
+                            cs.freeHandPoints.get(i).y,
+                            cs.freeHandPoints.get(i + 1).x,
+                            cs.freeHandPoints.get(i + 1).y
+                    );
+                }
+            }
         }
 
         if (model.clickBegin != null && model.clickEnd != null) {
@@ -99,8 +134,7 @@ public class Canvas extends JComponent implements Observer {
                 case STRAIGHT:
                     gc.draw(drawLine(model.clickBegin.x, model.clickBegin.y, model.clickEnd.x, model.clickEnd.y));
                     break;
-                case FREEFORM:
-                    //
+                // We don't need a preview for FREEFORM
             }
         }
     }
@@ -124,4 +158,4 @@ public class Canvas extends JComponent implements Observer {
         return new Line2D.Float(x1, y1, x2, y2);
     }
 
-    }
+}

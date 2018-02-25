@@ -13,7 +13,7 @@ public class Model {
     /** The observers that are watching this model for changes. */
     private List<Observer> observers;
 
-    // User selected menubar/toolbar options
+    // User selected menubar/toolbar
     private Boolean drawMode = true; // true for Draw mode, false for Select mode
     private drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
     private int strokeThickness = 1;
@@ -21,13 +21,33 @@ public class Model {
     private Color strokeColor = Color.BLACK;
 
     // Canvas
-    public List<Shape> shapes = new ArrayList<>();
-    public List<Integer> strokeWidths = new ArrayList<>();
-    public List<Color> fillColors = new ArrayList<>();
-    public List<Color> strokeColors = new ArrayList<>();
+    public List<CanvasShape> canvasShapes = new ArrayList<>();
+    public int canvasShapesSize = 0;
     public Point clickBegin, clickEnd;
+    public static class CanvasShape {
+        public List<Point> freeHandPoints = null;
+        public Shape shape = null;
+        public drawingModeType drawingMode;
+        public Color fillColor;
+        public Color strokeColor;
+        public int strokeWidth;
+        public boolean selected = false;
 
-    public List<List<Point>> freeHands = new ArrayList<>();
+        public CanvasShape(Shape s, drawingModeType dm, Color fc, Color sc, int sw) {
+            shape = s;
+            drawingMode = dm;
+            fillColor = fc;
+            strokeColor = sc;
+            strokeWidth = sw;
+        }
+        public CanvasShape(List<Point> points, drawingModeType dm, Color fc, Color sc, int sw) {
+            freeHandPoints = points;
+            drawingMode = dm;
+            fillColor = fc;
+            strokeColor = sc;
+            strokeWidth = sw;
+        }
+    }
 
     public Boolean getDrawMode() {
         return drawMode;
