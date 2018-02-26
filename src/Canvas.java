@@ -140,102 +140,91 @@ public class Canvas extends JComponent implements Observer {
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
         for (Model.CanvasShape cs : model.canvasShapes) {
-            g2.setStroke(new BasicStroke(cs.strokeWidth));
-            g2.setPaint(cs.strokeColor);
-            if (cs.shape != null) {
-                g2.draw(cs.shape);
-                g2.setPaint(cs.fillColor);
-                g2.fill(cs.shape);
-            } else if (cs.freeHandPoints != null) {
-                // draw the Freeform line
-                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
-                    g.drawLine(
-                            cs.freeHandPoints.get(i).x,
-                            cs.freeHandPoints.get(i).y,
-                            cs.freeHandPoints.get(i + 1).x,
-                            cs.freeHandPoints.get(i + 1).y
-                    );
-                }
-            }
-            // Draw a rectangular box around shape if it is selected
-            if (cs.selected) {
-                g2.setStroke(new BasicStroke(1));
-                g2.setPaint(Color.CYAN);
-                if (cs.shape != null) {
-                    if (cs.shape instanceof Rectangle2D) {
-                        int x = (int) ((Rectangle2D) cs.shape).getX();
-                        int y = (int) ((Rectangle2D) cs.shape).getY();
-                        int width = (int) ((Rectangle2D) cs.shape).getWidth();
-                        int height = (int) ((Rectangle2D) cs.shape).getHeight();
-                        Rectangle2D.Float rect = drawRectangle(
-                                x - 10,
-                                y - 10,
-                                x + width + 10,
-                                y + height + 10
-                        );
-                        g2.draw(rect);
-                        System.out.println("drew select box");
+            drawShape(cs, g2);
+            drawSelectRectangle(cs, g2);
+        }
+        drawPreviewLine(g2);
+    }
 
-                    } else if (cs.shape instanceof Ellipse2D) {
-                        int x = (int) ((Ellipse2D) cs.shape).getX();
-                        int y = (int) ((Ellipse2D) cs.shape).getY();
-                        int width = (int) ((Ellipse2D) cs.shape).getWidth();
-                        int height = (int) ((Ellipse2D) cs.shape).getHeight();
-                        Rectangle.Float rect = drawRectangle(
-                                x - 10,
-                                y - 10,
-                                x + width + 10,
-                                y + height + 10
-                        );
-                        g2.draw(rect);
-                        System.out.println("drew select box");
-
-                    } else if (cs.shape instanceof Line2D) {
-                        int x1 = (int) ((Line2D) cs.shape).getX1();
-                        int y1 = (int) ((Line2D) cs.shape).getY1();
-                        int x2 = (int) ((Line2D) cs.shape).getX2();
-                        int y2 = (int) ((Line2D) cs.shape).getY2();
-                        if (x1 <= x2 && y1 <= y2) {
-                            Rectangle.Float rect = drawRectangle(x1 - 10, y1 - 10, x2 + 10, y2 + 10);
-                            g2.draw(rect);
-                        } else if (x1 <= x2 && y1 >= y2) {
-                            Rectangle.Float rect = drawRectangle(x1 - 10, y1 + 10, x2 + 10, y2 - 10);
-                            g2.draw(rect);
-                        } else if (x1 >= x2 && y1 >= y2) {
-                            Rectangle.Float rect = drawRectangle(x1 + 10, y1 + 10, x2 - 10, y2 - 10);
-                            g2.draw(rect);
-                        } else if (x1 >= x2 && y1 <= y2) {
-                            Rectangle.Float rect = drawRectangle(x1 + 10, y1 - 10, x2 - 10, y2 + 10);
-                            g2.draw(rect);
-                        }
-                        System.out.println("drew select box");
-                    }
-                } else if (cs.freeHandPoints != null) {
-                    int xMin = Integer.MAX_VALUE;
-                    int yMin = Integer.MAX_VALUE;
-                    int xMax = Integer.MIN_VALUE;
-                    int yMax = Integer.MIN_VALUE;
-
-                    for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
-                        if (cs.freeHandPoints.get(i).x < xMin) {
-                            xMin = cs.freeHandPoints.get(i).x;
-                        }
-                        if (cs.freeHandPoints.get(i).x > xMax) {
-                            xMax = cs.freeHandPoints.get(i).x;
-                        }
-                        if (cs.freeHandPoints.get(i).y < yMin) {
-                            yMin = cs.freeHandPoints.get(i).y;
-                        }
-                        if (cs.freeHandPoints.get(i).y > yMax) {
-                            yMax = cs.freeHandPoints.get(i).y;
-                        }
-                    }
-                    Rectangle.Float rect = drawRectangle(xMin - 10, yMin - 10, xMax + 10, yMax + 10);
-                    g2.draw(rect);
-                }
+    private void drawShape(Model.CanvasShape cs, Graphics2D g2) {
+        g2.setStroke(new BasicStroke(cs.strokeWidth));
+        g2.setPaint(cs.strokeColor);
+        if (cs.shape != null) {
+            g2.draw(cs.shape);
+            g2.setPaint(cs.fillColor);
+            g2.fill(cs.shape);
+        } else if (cs.freeHandPoints != null) {
+            // draw the Freeform line
+            for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
+                g2.drawLine(
+                        cs.freeHandPoints.get(i).x,
+                        cs.freeHandPoints.get(i).y,
+                        cs.freeHandPoints.get(i + 1).x,
+                        cs.freeHandPoints.get(i + 1).y
+                );
             }
         }
+    }
 
+    private void drawSelectRectangle(Model.CanvasShape cs, Graphics2D g2) {
+        // Draw a rectangular box around shape if it is selected
+        if (cs.selected) {
+            g2.setStroke(new BasicStroke(1));
+            g2.setPaint(Color.CYAN);
+            if (cs.shape != null) {
+                int x1 = 0;
+                int x2 = 0;
+                int y1 = 0;
+                int y2 = 0;
+                if (cs.shape instanceof Rectangle2D) {
+                    x1 = (int) ((Rectangle2D) cs.shape).getX();
+                    y1 = (int) ((Rectangle2D) cs.shape).getY();
+                    int width = (int) ((Rectangle2D) cs.shape).getWidth();
+                    int height = (int) ((Rectangle2D) cs.shape).getHeight();
+                    x2 = x1 + width;
+                    y2 = y1 + height;
+                } else if (cs.shape instanceof Ellipse2D) {
+                    x1 = (int) ((Ellipse2D) cs.shape).getX();
+                    y1 = (int) ((Ellipse2D) cs.shape).getY();
+                    int width = (int) ((Ellipse2D) cs.shape).getWidth();
+                    int height = (int) ((Ellipse2D) cs.shape).getHeight();
+                    x2 = x1 + width;
+                    y2 = y1 + height;
+                } else if (cs.shape instanceof Line2D) {
+                    x1 = (int) ((Line2D) cs.shape).getX1();
+                    y1 = (int) ((Line2D) cs.shape).getY1();
+                    x2 = (int) ((Line2D) cs.shape).getX2();
+                    y2 = (int) ((Line2D) cs.shape).getY2();
+                }
+                Rectangle.Float rect = drawRectangle(x1, y1, x2, y2);
+                g2.draw(rect);
+            } else if (cs.freeHandPoints != null) {
+                int xMin = Integer.MAX_VALUE;
+                int yMin = Integer.MAX_VALUE;
+                int xMax = Integer.MIN_VALUE;
+                int yMax = Integer.MIN_VALUE;
+
+                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
+                    if (cs.freeHandPoints.get(i).x < xMin) {
+                        xMin = cs.freeHandPoints.get(i).x;
+                    }
+                    if (cs.freeHandPoints.get(i).x > xMax) {
+                        xMax = cs.freeHandPoints.get(i).x;
+                    }
+                    if (cs.freeHandPoints.get(i).y < yMin) {
+                        yMin = cs.freeHandPoints.get(i).y;
+                    }
+                    if (cs.freeHandPoints.get(i).y > yMax) {
+                        yMax = cs.freeHandPoints.get(i).y;
+                    }
+                }
+                Rectangle.Float rect = drawRectangle(xMin, yMin, xMax, yMax);
+                g2.draw(rect);
+            }
+        }
+    }
+
+    private void drawPreviewLine(Graphics2D g2) {
         if (model.clickBegin != null && model.clickEnd != null) {
             // draw a semi transparent line
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
