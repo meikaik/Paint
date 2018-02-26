@@ -21,6 +21,8 @@ public class Model {
     private Color strokeColor = Color.BLACK;
 
     // Canvas
+    // TODO: make these fields public
+    // TODO: getters and setters for all of these fields
     public List<CanvasShape> canvasShapes = new ArrayList<>();
     public int canvasShapesSize = 0;
     public Point clickBegin, clickEnd;

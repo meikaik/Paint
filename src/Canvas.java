@@ -132,12 +132,18 @@ public class Canvas extends JComponent implements Observer {
         this.setVisible(true);
     }
 
+    public void update(Object observable) {
+        // XXX Fill this in with the logic for updating the view when the model
+        // changes.
+        System.out.println("Canvas Model changed!");
+        repaint();
+    }
+
     public void paint(Graphics g) {
         System.out.println("Paint called");
         Graphics2D g2 = (Graphics2D) g;
         // antiliasing
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         for (Model.CanvasShape cs : model.canvasShapes) {
             drawShape(cs, g2);
@@ -246,13 +252,6 @@ public class Canvas extends JComponent implements Observer {
         }
     }
 
-    public void update(Object observable) {
-        // XXX Fill this in with the logic for updating the view when the model
-        // changes.
-        System.out.println("Canvas Model changed!");
-        repaint();
-    }
-
     private Rectangle2D.Float drawRectangle(int x1, int y1, int x2, int y2) {
         return new Rectangle2D.Float(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x1 - x2), Math.abs(y1 - y2));
     }
@@ -276,4 +275,5 @@ public class Canvas extends JComponent implements Observer {
                 s.contains(mouse.x + threshold, mouse.y - threshold) ||
                 s.contains(mouse.x - threshold, mouse.y + threshold);
     }
+
 }

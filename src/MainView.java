@@ -66,6 +66,17 @@ public class MainView extends JFrame implements Observer {
         // Update stroke width
         strokeWidth.getItem(model.getStrokeThickness() - 1).setSelected(true);
         strokes.setSelectedIndex(model.getStrokeThickness() - 1);
+
+        // if in select mode, update the stroke width, stroke color, and fill of selected Shape
+        if (!model.getDrawMode()) {
+            for (Model.CanvasShape cs : model.canvasShapes) {
+                if (cs.selected) {
+                    cs.strokeWidth = model.getStrokeThickness();
+                    cs.strokeColor = model.getStrokeColor();
+                    cs.fillColor = model.getFillColor();
+                }
+            }
+        }
     }
 
     private void createMenuBar() {
