@@ -39,6 +39,7 @@ public class Model {
             fillColor = fc;
             strokeColor = sc;
             strokeWidth = sw;
+
         }
         public CanvasShape(List<Point> points, drawingModeType dm, Color fc, Color sc, int sw) {
             freeHandPoints = points;

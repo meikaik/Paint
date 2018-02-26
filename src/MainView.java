@@ -41,7 +41,6 @@ public class MainView extends JFrame implements Observer {
         // changes.
         this.model = model;
         model.addObserver(this);
-
         createMenuBar();
         createToolBar();
         add(new Canvas(model), BorderLayout.CENTER);
@@ -114,6 +113,20 @@ public class MainView extends JFrame implements Observer {
 
         deleteShape = new JMenuItem("Delete Shape");
         deleteShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_DELETE, 0));
+        deleteShape.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                for (Model.CanvasShape cs : model.canvasShapes) {
+                    if (cs.selected) {
+                        cs.shape = null;
+                        cs.freeHandPoints = null;
+                        cs.selected = false;
+                        // TODO: FIX THIS, we need the model to call notifyObservers() after we make cs.seleected = false
+                        model.setDrawMode();
+                    }
+                }
+            }
+        });
+
         transformShape = new JMenuItem("Transform Shape");
         transformShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_T, ActionEvent.CTRL_MASK));
         deleteShape.setEnabled(false);

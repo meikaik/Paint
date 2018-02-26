@@ -19,6 +19,10 @@ public class Canvas extends JComponent implements Observer {
             public void mousePressed(MouseEvent e) {
                 model.clickBegin = e.getPoint();
                 model.clickEnd = model.clickBegin;
+                // unselect all shapes
+                for (Model.CanvasShape cs : model.canvasShapes) {
+                    cs.selected = false;
+                }
                 if (model.getDrawMode()) {
                     if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
                         java.util.List<Point> freeHandPoints = new ArrayList<>();
@@ -34,16 +38,23 @@ public class Canvas extends JComponent implements Observer {
                     repaint();
                 }
                 else {
-                    for (Model.CanvasShape cs : model.canvasShapes) {
+                    ListIterator<Model.CanvasShape> it = model.canvasShapes.listIterator(model.canvasShapes.size());
+                    outerloop:
+                    while(it.hasPrevious()) {
+                        Model.CanvasShape cs = it.previous();
                         if (cs.shape != null) {
                             if (cs.shape instanceof Line2D.Float) {
-                                double d2 = ((Line2D.Float) cs.shape).ptLineDist(model.clickBegin);
+                                double d2 = ((Line2D.Float) cs.shape).ptSegDist(model.clickBegin);
                                 if (d2 < 5 + model.getStrokeThickness()) {
                                     System.out.println("HIT STRAIGHT LINE");
+                                    cs.selected = true;
+                                    break;
                                 }
                             }
                             if (polyHitTest(cs.shape, model.clickBegin, 5 + model.getStrokeThickness())) {
                                 System.out.println("HIT shape!");
+                                cs.selected = true;
+                                break;
                             }
                         }
                         else if (cs.freeHandPoints != null) {
@@ -57,6 +68,8 @@ public class Canvas extends JComponent implements Observer {
                                         model.clickBegin.y);
                                 if (d2 < 5 + model.getStrokeThickness()) {
                                     System.out.println("HIT FREEFORM");
+                                    cs.selected = true;
+                                    break outerloop;
                                 }
                             }
                         }
@@ -93,8 +106,8 @@ public class Canvas extends JComponent implements Observer {
                         model.canvasShapes.add(cs);
                     }
                     model.canvasShapesSize++;
-                    repaint();
                 }
+                repaint();
                 model.clickBegin = null;
                 model.clickEnd = null;
                 System.out.println("mouse released");
@@ -115,7 +128,6 @@ public class Canvas extends JComponent implements Observer {
                 System.out.println("mouse dragged");
             }
         });
-
         model.addObserver(this);
         this.setVisible(true);
     }
@@ -134,8 +146,7 @@ public class Canvas extends JComponent implements Observer {
                 g2.draw(cs.shape);
                 g2.setPaint(cs.fillColor);
                 g2.fill(cs.shape);
-            }
-            else {
+            } else if (cs.freeHandPoints != null) {
                 // draw the Freeform line
                 for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
                     g.drawLine(
@@ -144,6 +155,83 @@ public class Canvas extends JComponent implements Observer {
                             cs.freeHandPoints.get(i + 1).x,
                             cs.freeHandPoints.get(i + 1).y
                     );
+                }
+            }
+            // Draw a rectangular box around shape if it is selected
+            if (cs.selected) {
+                g2.setStroke(new BasicStroke(1));
+                g2.setPaint(Color.CYAN);
+                if (cs.shape != null) {
+                    if (cs.shape instanceof Rectangle2D) {
+                        int x = (int) ((Rectangle2D) cs.shape).getX();
+                        int y = (int) ((Rectangle2D) cs.shape).getY();
+                        int width = (int) ((Rectangle2D) cs.shape).getWidth();
+                        int height = (int) ((Rectangle2D) cs.shape).getHeight();
+                        Rectangle2D.Float rect = drawRectangle(
+                                x - 10,
+                                y - 10,
+                                x + width + 10,
+                                y + height + 10
+                        );
+                        g2.draw(rect);
+                        System.out.println("drew select box");
+
+                    } else if (cs.shape instanceof Ellipse2D) {
+                        int x = (int) ((Ellipse2D) cs.shape).getX();
+                        int y = (int) ((Ellipse2D) cs.shape).getY();
+                        int width = (int) ((Ellipse2D) cs.shape).getWidth();
+                        int height = (int) ((Ellipse2D) cs.shape).getHeight();
+                        Rectangle.Float rect = drawRectangle(
+                                x - 10,
+                                y - 10,
+                                x + width + 10,
+                                y + height + 10
+                        );
+                        g2.draw(rect);
+                        System.out.println("drew select box");
+
+                    } else if (cs.shape instanceof Line2D) {
+                        int x1 = (int) ((Line2D) cs.shape).getX1();
+                        int y1 = (int) ((Line2D) cs.shape).getY1();
+                        int x2 = (int) ((Line2D) cs.shape).getX2();
+                        int y2 = (int) ((Line2D) cs.shape).getY2();
+                        if (x1 <= x2 && y1 <= y2) {
+                            Rectangle.Float rect = drawRectangle(x1 - 10, y1 - 10, x2 + 10, y2 + 10);
+                            g2.draw(rect);
+                        } else if (x1 <= x2 && y1 >= y2) {
+                            Rectangle.Float rect = drawRectangle(x1 - 10, y1 + 10, x2 + 10, y2 - 10);
+                            g2.draw(rect);
+                        } else if (x1 >= x2 && y1 >= y2) {
+                            Rectangle.Float rect = drawRectangle(x1 + 10, y1 + 10, x2 - 10, y2 - 10);
+                            g2.draw(rect);
+                        } else if (x1 >= x2 && y1 <= y2) {
+                            Rectangle.Float rect = drawRectangle(x1 + 10, y1 - 10, x2 - 10, y2 + 10);
+                            g2.draw(rect);
+                        }
+                        System.out.println("drew select box");
+                    }
+                } else if (cs.freeHandPoints != null) {
+                    int xMin = Integer.MAX_VALUE;
+                    int yMin = Integer.MAX_VALUE;
+                    int xMax = Integer.MIN_VALUE;
+                    int yMax = Integer.MIN_VALUE;
+
+                    for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
+                        if (cs.freeHandPoints.get(i).x < xMin) {
+                            xMin = cs.freeHandPoints.get(i).x;
+                        }
+                        if (cs.freeHandPoints.get(i).x > xMax) {
+                            xMax = cs.freeHandPoints.get(i).x;
+                        }
+                        if (cs.freeHandPoints.get(i).y < yMin) {
+                            yMin = cs.freeHandPoints.get(i).y;
+                        }
+                        if (cs.freeHandPoints.get(i).y > yMax) {
+                            yMax = cs.freeHandPoints.get(i).y;
+                        }
+                    }
+                    Rectangle.Float rect = drawRectangle(xMin - 10, yMin - 10, xMax + 10, yMax + 10);
+                    g2.draw(rect);
                 }
             }
         }
