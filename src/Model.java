@@ -79,6 +79,12 @@ public class Model {
         notifyObservers();
     }
 
+    public void resetCanvasShapes() {
+        canvasShapes = new ArrayList<>();
+        canvasShapesSize = 0;
+        notifyObservers();
+    }
+
     public Point getClickBegin() {
         return clickBegin;
     }

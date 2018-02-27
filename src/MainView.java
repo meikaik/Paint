@@ -111,6 +111,12 @@ public class MainView extends JFrame implements Observer {
         JMenu file = new JMenu("File");
         JMenuItem new1 = new JMenuItem("New");
         new1.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_N, ActionEvent.CTRL_MASK));
+        new1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                model.resetCanvasShapes();
+            }
+        });
+
         JMenuItem exit = new JMenuItem("Exit");
         exit.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
         exit.addActionListener(new ActionListener() {
@@ -153,49 +159,7 @@ public class MainView extends JFrame implements Observer {
         transformShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_T, ActionEvent.CTRL_MASK));
         transformShape.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                JSpinner translateX = new JSpinner(new SpinnerNumberModel(0, -1000, 1000, 1));
-                JSpinner translateY = new JSpinner(new SpinnerNumberModel(0, -1000, 1000, 1));
-                JSpinner rotate = new JSpinner(new SpinnerNumberModel(0, -360, 360, 1));
-                JSpinner scaleX = new JSpinner(new SpinnerNumberModel(1, -10, 10, 0.1));
-                JSpinner scaleY = new JSpinner(new SpinnerNumberModel(1, -10, 10, 0.1));
-                JPanel panel = new JPanel(new GridLayout(3, 3));
-                JPanel subpanel = new JPanel(new GridLayout(1, 2));
-                panel.add(new JLabel("Translate (px):"));
-                subpanel.add(new JLabel("                        x:"));
-                subpanel.add(translateX);
-                panel.add(subpanel);
-                JPanel subpanel2 = new JPanel(new GridLayout(1, 2));
-                subpanel2.add(new JLabel("                        y:"));
-                subpanel2.add(translateY);
-                panel.add(subpanel2);
-                panel.add(new JLabel("Rotate (degrees):"));
-                panel.add(rotate);
-                panel.add(new JLabel(""));
-                panel.add(new JLabel("Scale (times):"));
-                JPanel subpanel3 = new JPanel(new GridLayout(1, 2));
-                subpanel3.add(new JLabel("                        x:"));
-                subpanel3.add(scaleX);
-                panel.add(subpanel3);
-                JPanel subpanel4 = new JPanel(new GridLayout(1, 2));
-                subpanel4.add(new JLabel("                        y:"));
-                subpanel4.add(scaleY);
-                panel.add(subpanel4);
-                int result = JOptionPane.showConfirmDialog(null, panel, "Test",
-                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-                if (result == JOptionPane.OK_OPTION) {
-                    for(Model.CanvasShape cs : model.getCanvasShapes()) {
-                        if (cs.selected) {
-                            cs.translateX = (int)translateX.getValue();
-                            cs.translateY = (int)translateY.getValue();
-                            cs.rotate = (int)rotate.getValue();
-                            cs.scaleX = (double)scaleX.getValue();
-                            cs.scaleY = (double)scaleY.getValue();
-                            model.notifyObservers();
-                        }
-                    }
-                } else {
-                    System.out.println("Cancelled");
-                }
+                addTransformShapeModal();
             }
         });
 
@@ -471,6 +435,52 @@ public class MainView extends JFrame implements Observer {
         else {
             int val = Character.getNumericValue(selectedStrokeThickness.charAt(0));
             model.setStrokeThickness(val);
+        }
+    }
+
+    private void addTransformShapeModal() {
+        JSpinner translateX = new JSpinner(new SpinnerNumberModel(0, -1000, 1000, 1));
+        JSpinner translateY = new JSpinner(new SpinnerNumberModel(0, -1000, 1000, 1));
+        JSpinner rotate = new JSpinner(new SpinnerNumberModel(0, -360, 360, 1));
+        JSpinner scaleX = new JSpinner(new SpinnerNumberModel(1, -10, 10, 0.1));
+        JSpinner scaleY = new JSpinner(new SpinnerNumberModel(1, -10, 10, 0.1));
+        JPanel panel = new JPanel(new GridLayout(3, 3));
+        JPanel subpanel = new JPanel(new GridLayout(1, 2));
+        panel.add(new JLabel("Translate (px):"));
+        subpanel.add(new JLabel("                        x:"));
+        subpanel.add(translateX);
+        panel.add(subpanel);
+        JPanel subpanel2 = new JPanel(new GridLayout(1, 2));
+        subpanel2.add(new JLabel("                        y:"));
+        subpanel2.add(translateY);
+        panel.add(subpanel2);
+        panel.add(new JLabel("Rotate (degrees):"));
+        panel.add(rotate);
+        panel.add(new JLabel(""));
+        panel.add(new JLabel("Scale (times):"));
+        JPanel subpanel3 = new JPanel(new GridLayout(1, 2));
+        subpanel3.add(new JLabel("                        x:"));
+        subpanel3.add(scaleX);
+        panel.add(subpanel3);
+        JPanel subpanel4 = new JPanel(new GridLayout(1, 2));
+        subpanel4.add(new JLabel("                        y:"));
+        subpanel4.add(scaleY);
+        panel.add(subpanel4);
+        int result = JOptionPane.showConfirmDialog(null, panel, "Transform Shape",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            for(Model.CanvasShape cs : model.getCanvasShapes()) {
+                if (cs.selected) {
+                    cs.translateX = (int)translateX.getValue();
+                    cs.translateY = (int)translateY.getValue();
+                    cs.rotate = (int)rotate.getValue();
+                    cs.scaleX = (double)scaleX.getValue();
+                    cs.scaleY = (double)scaleY.getValue();
+                    model.notifyObservers();
+                }
+            }
+        } else {
+            System.out.println("Cancelled");
         }
     }
 
