@@ -16,16 +16,17 @@ public class Model {
     // User selected menubar/toolbar
     private Boolean drawMode = true; // true for Draw mode, false for Select mode
     private drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
-    private int strokeThickness = 1;
-    private Color fillColor = Color.WHITE;
-    private Color strokeColor = Color.BLACK;
+    public int strokeThickness = 1;
+    public Color fillColor = Color.WHITE;
+    public Color strokeColor = Color.BLACK;
+    private Boolean deleteTransformOverride = false; // false for no override, true for override make field unclickable
 
     // Canvas
-    // TODO: make these fields public
-    // TODO: getters and setters for all of these fields
-    public List<CanvasShape> canvasShapes = new ArrayList<>();
-    public int canvasShapesSize = 0;
-    public Point clickBegin, clickEnd;
+    private List<CanvasShape> canvasShapes = new ArrayList<>();
+    private int canvasShapesSize = 0;
+    private Point clickBegin, clickEnd;
+
+    // Create a CanvasShape "struct"
     public static class CanvasShape {
         public List<Point> freeHandPoints = null;
         public Shape shape = null;
@@ -34,6 +35,8 @@ public class Model {
         public Color strokeColor;
         public int strokeWidth;
         public boolean selected = false;
+        public int translateX = 0, translateY = 0, rotate = 0;
+        public double scaleX = 1, scaleY = 1;
 
         public CanvasShape(Shape s, drawingModeType dm, Color fc, Color sc, int sw) {
             shape = s;
@@ -50,6 +53,48 @@ public class Model {
             strokeColor = sc;
             strokeWidth = sw;
         }
+
+        public Point getMidPoint() {
+            return new Point(
+                    (int)(shape.getBounds().getMinX() + shape.getBounds().getMaxX())/2,
+                    (int)(shape.getBounds().getMinY() + shape.getBounds().getMaxY())/2);
+        }
+    }
+
+    public List<CanvasShape> getCanvasShapes() {
+        return canvasShapes;
+    }
+
+    public void addCanvasShape(CanvasShape cs) {
+        canvasShapes.add(cs);
+        notifyObservers();
+    }
+
+    public int getCanvasShapesSize() {
+        return canvasShapesSize;
+    }
+
+    public void incrementCanvasShapesSize() {
+        canvasShapesSize++;
+        notifyObservers();
+    }
+
+    public Point getClickBegin() {
+        return clickBegin;
+    }
+
+    public void setClickBegin(Point p) {
+        clickBegin = p;
+        notifyObservers();
+    }
+
+    public Point getClickEnd() {
+        return clickEnd;
+    }
+
+    public void setClickEnd(Point p) {
+        clickEnd = p;
+        notifyObservers();
     }
 
     public Boolean getDrawMode() {
@@ -94,6 +139,15 @@ public class Model {
 
     public void setStrokeColor(Color color) {
         strokeColor = color;
+        notifyObservers();
+    }
+
+    public Boolean getdeleteTransformOverride() {
+        return deleteTransformOverride;
+    }
+
+    public void setDeleteTransformOverride(Boolean bool) {
+        deleteTransformOverride = bool;
         notifyObservers();
     }
 

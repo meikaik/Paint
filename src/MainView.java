@@ -2,7 +2,6 @@
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.event.*;
 
 
@@ -20,12 +19,16 @@ public class MainView extends JFrame implements Observer {
     private JMenuItem deleteShape;
     private JMenuItem transformShape;
     private JMenu strokeWidth;
+    private JMenuItem fillColor;
+    private JMenuItem strokeColor;
 
     // Toolbar
     private JButton selectButton;
     private JButton drawButton;
     private JComboBox drawingModes;
     private JComboBox strokes;
+    private JButton fillColorButton;
+    private JButton strokeColorButton;
 
     /**
      * Create a new View.
@@ -60,24 +63,33 @@ public class MainView extends JFrame implements Observer {
         selectionMode.setSelected(!model.getDrawMode());
         drawButton.setSelected(model.getDrawMode());
         drawingMode.setSelected(model.getDrawMode());
-        deleteShape.setEnabled(!model.getDrawMode());
-        transformShape.setEnabled(!model.getDrawMode());
+        if (!model.getDrawMode()) {
+            deleteShape.setEnabled(true);
+            transformShape.setEnabled(true);
+        }
+        else {
+            deleteShape.setEnabled(false);
+            transformShape.setEnabled(false);
+            for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                cs.selected = false;
+            }
+        }
+        if (model.getdeleteTransformOverride()) {
+            deleteShape.setEnabled(false);
+            transformShape.setEnabled(false);
+        }
+
+        // Update colors on toolbar/menu
+        strokeColorButton.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
+        fillColorButton.setIcon(changeColor(fillColorImage, model.getFillColor()));
+        fillColor.setIcon(changeColor(fillColorImage, model.getFillColor()));
+        strokeColor.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
+
 
         // Update stroke width
         strokeWidth.getItem(model.getStrokeThickness() - 1).setSelected(true);
         strokes.setSelectedIndex(model.getStrokeThickness() - 1);
-
-        // if in select mode, update the stroke width, stroke color, and fill of selected Shape
-        if (!model.getDrawMode()) {
-            for (Model.CanvasShape cs : model.canvasShapes) {
-                if (cs.selected) {
-                    cs.strokeWidth = model.getStrokeThickness();
-                    cs.strokeColor = model.getStrokeColor();
-                    cs.fillColor = model.getFillColor();
-                }
-            }
         }
-    }
 
     private void createMenuBar() {
         JMenuBar menubar=new JMenuBar();
@@ -126,13 +138,12 @@ public class MainView extends JFrame implements Observer {
         deleteShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_DELETE, 0));
         deleteShape.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                for (Model.CanvasShape cs : model.canvasShapes) {
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
                     if (cs.selected) {
                         cs.shape = null;
                         cs.freeHandPoints = null;
                         cs.selected = false;
-                        // TODO: FIX THIS, we need the model to call notifyObservers() after we make cs.seleected = false
-                        model.setDrawMode();
+                        model.setDeleteTransformOverride(true);
                     }
                 }
             }
@@ -140,6 +151,55 @@ public class MainView extends JFrame implements Observer {
 
         transformShape = new JMenuItem("Transform Shape");
         transformShape.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_T, ActionEvent.CTRL_MASK));
+        transformShape.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                JSpinner translateX = new JSpinner(new SpinnerNumberModel(0, -1000, 1000, 1));
+                JSpinner translateY = new JSpinner(new SpinnerNumberModel(0, -1000, 1000, 1));
+                JSpinner rotate = new JSpinner(new SpinnerNumberModel(0, -360, 360, 1));
+                JSpinner scaleX = new JSpinner(new SpinnerNumberModel(1, -10, 10, 0.1));
+                JSpinner scaleY = new JSpinner(new SpinnerNumberModel(1, -10, 10, 0.1));
+                JPanel panel = new JPanel(new GridLayout(3, 3));
+                JPanel subpanel = new JPanel(new GridLayout(1, 2));
+                panel.add(new JLabel("Translate (px):"));
+                subpanel.add(new JLabel("                        x:"));
+                subpanel.add(translateX);
+                panel.add(subpanel);
+                JPanel subpanel2 = new JPanel(new GridLayout(1, 2));
+                subpanel2.add(new JLabel("                        y:"));
+                subpanel2.add(translateY);
+                panel.add(subpanel2);
+                panel.add(new JLabel("Rotate (degrees):"));
+                panel.add(rotate);
+                panel.add(new JLabel(""));
+                panel.add(new JLabel("Scale (times):"));
+                JPanel subpanel3 = new JPanel(new GridLayout(1, 2));
+                subpanel3.add(new JLabel("                        x:"));
+                subpanel3.add(scaleX);
+                panel.add(subpanel3);
+                JPanel subpanel4 = new JPanel(new GridLayout(1, 2));
+                subpanel4.add(new JLabel("                        y:"));
+                subpanel4.add(scaleY);
+                panel.add(subpanel4);
+                int result = JOptionPane.showConfirmDialog(null, panel, "Test",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                if (result == JOptionPane.OK_OPTION) {
+                    for(Model.CanvasShape cs : model.getCanvasShapes()) {
+                        if (cs.selected) {
+                            cs.translateX = (int)translateX.getValue();
+                            cs.translateY = (int)translateY.getValue();
+                            cs.rotate = (int)rotate.getValue();
+                            cs.scaleX = (double)scaleX.getValue();
+                            cs.scaleY = (double)scaleY.getValue();
+                            model.notifyObservers();
+                        }
+                    }
+                } else {
+                    System.out.println("Cancelled");
+                }
+            }
+        });
+
+
         deleteShape.setEnabled(false);
         transformShape.setEnabled(false);
 
@@ -187,6 +247,18 @@ public class MainView extends JFrame implements Observer {
         ActionListener radioActionListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 AbstractButton button = (AbstractButton) e.getSource();
+                // TODO: Refactor this... its so ugly
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                    if (cs.selected) {
+                        if ("10px" == button.getText()) {
+                            cs.strokeWidth = 10;
+                        }
+                        else {
+                            int val = Character.getNumericValue(button.getText().charAt(0));
+                            cs.strokeWidth = val;
+                        }
+                    }
+                }
                 updateStrokeThickness(button.getText());
             }
         };
@@ -204,7 +276,7 @@ public class MainView extends JFrame implements Observer {
 
     private JMenuItem addFillColorMenuItem() {
         ImageIcon fill = changeColor(fillColorImage,  model.getFillColor());
-        JMenuItem fillColor = new JMenuItem("Fill Colour...", fill);
+        fillColor = new JMenuItem("Fill Colour...", fill);
         fillColor.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
                 Color newColor = JColorChooser.showDialog(null, "Choose Fill Colour", model.getFillColor());
@@ -213,6 +285,12 @@ public class MainView extends JFrame implements Observer {
                 }
                 System.out.println("New fill color: " + model.getFillColor());
                 fillColor.setIcon(changeColor(fillColorImage, model.getFillColor()));
+
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                    if (cs.selected) {
+                        cs.fillColor = model.getFillColor();
+                    }
+                }
             }
         });
         return fillColor;
@@ -220,7 +298,7 @@ public class MainView extends JFrame implements Observer {
 
     private JMenuItem addStrokeColorMenuItem() {
         ImageIcon stroke = changeColor(strokeColorImage,  model.getStrokeColor());
-        JMenuItem strokeColor = new JMenuItem("Stroke Colour...", stroke);
+        strokeColor = new JMenuItem("Stroke Colour...", stroke);
         strokeColor.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
                 Color newColor = JColorChooser.showDialog(null, "Choose Stroke Colour", model.getStrokeColor());
@@ -229,6 +307,12 @@ public class MainView extends JFrame implements Observer {
                 }
                 System.out.println("New stroke color: " + model.getStrokeColor());
                 strokeColor.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
+
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                    if (cs.selected) {
+                        cs.strokeColor = model.getStrokeColor();
+                    }
+                }
             }
         });
         return strokeColor;
@@ -248,6 +332,7 @@ public class MainView extends JFrame implements Observer {
              public void actionPerformed(ActionEvent e){
                 if (model.getDrawMode()) {
                     model.setDrawMode();
+                    model.setDeleteTransformOverride(true);
                 }
             }
         });
@@ -256,6 +341,7 @@ public class MainView extends JFrame implements Observer {
             public void actionPerformed(ActionEvent e){
                 if (!model.getDrawMode()) {
                     model.setDrawMode();
+                    model.setDeleteTransformOverride(true);
                 }
             }
         });
@@ -317,6 +403,18 @@ public class MainView extends JFrame implements Observer {
                 if ( model.getStrokeThickness() != tempp) {
                     updateStrokeThickness(temp);
                 }
+                // TODO: Refactor this... its so ugly
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                    if (cs.selected) {
+                        if ("10px" == temp) {
+                            cs.strokeWidth = 10;
+                        }
+                        else {
+                            int val = Character.getNumericValue(temp.charAt(0));
+                            cs.strokeWidth = val;
+                        }
+                    }
+                }
             }
         });
         return strokes;
@@ -324,34 +422,46 @@ public class MainView extends JFrame implements Observer {
 
     private JButton addFillColorButton() {
         ImageIcon fill = changeColor(fillColorImage,  model.getFillColor());
-        JButton fillColor = new JButton("Fill Colour", fill);
-        fillColor.addActionListener(new ActionListener() {
+        fillColorButton = new JButton("Fill Colour", fill);
+        fillColorButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
                 Color newColor = JColorChooser.showDialog(null, "Choose Fill Colour", model.getFillColor());
                 if (newColor != null) {
                     model.setFillColor(newColor);
                 }
                 System.out.println("New fill color: " + model.getFillColor());
-                fillColor.setIcon(changeColor(fillColorImage, model.getFillColor()));
+                fillColorButton.setIcon(changeColor(fillColorImage, model.getFillColor()));
+
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                    if (cs.selected) {
+                        cs.fillColor = model.getFillColor();
+                    }
+                }
             }
         });
-        return fillColor;
+        return fillColorButton;
     }
 
     private JButton addStrokeColorButton() {
         ImageIcon stroke = changeColor(strokeColorImage, model.getStrokeColor());
-        JButton strokeColor = new JButton("Stroke Colour", stroke);
-        strokeColor.addActionListener(new ActionListener() {
+        strokeColorButton = new JButton("Stroke Colour", stroke);
+        strokeColorButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
                 Color newColor = JColorChooser.showDialog(null, "Choose Stroke Colour", model.getStrokeColor());
                 if (newColor != null) {
                     model.setStrokeColor(newColor);
                 }
                 System.out.println("New stroke color: " + model.getStrokeColor());
-                strokeColor.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
+                strokeColorButton.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
+
+                for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                    if (cs.selected) {
+                        cs.strokeColor = model.getStrokeColor();
+                    }
+                }
             }
         });
-        return strokeColor;
+        return strokeColorButton;
     }
 
     private void updateStrokeThickness(String selectedStrokeThickness) {
