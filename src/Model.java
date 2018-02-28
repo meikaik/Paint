@@ -1,4 +1,5 @@
 
+import java.awt.geom.AffineTransform;
 import java.util.*;
 import java.awt.Color;
 import java.awt.Shape;
@@ -37,6 +38,7 @@ public class Model {
         public boolean selected = false;
         public int translateX = 0, translateY = 0, rotate = 0;
         public double scaleX = 1, scaleY = 1;
+        public AffineTransform AT = null;
 
         public CanvasShape(Shape s, drawingModeType dm, Color fc, Color sc, int sw) {
             shape = s;
@@ -46,6 +48,7 @@ public class Model {
             strokeWidth = sw;
 
         }
+
         public CanvasShape(List<Point> points, drawingModeType dm, Color fc, Color sc, int sw) {
             freeHandPoints = points;
             drawingMode = dm;
@@ -55,9 +58,34 @@ public class Model {
         }
 
         public Point getMidPoint() {
-            return new Point(
-                    (int)(shape.getBounds().getMinX() + shape.getBounds().getMaxX())/2,
-                    (int)(shape.getBounds().getMinY() + shape.getBounds().getMaxY())/2);
+            if (shape != null) {
+                return new Point(
+                        (int) (shape.getBounds().getMinX() + shape.getBounds().getMaxX()) / 2,
+                        (int) (shape.getBounds().getMinY() + shape.getBounds().getMaxY()) / 2);
+            } else if (freeHandPoints != null) {
+                int x1 = Integer.MAX_VALUE;
+                int y1 = Integer.MAX_VALUE;
+                int x2 = Integer.MIN_VALUE;
+                int y2 = Integer.MIN_VALUE;
+
+                for (int i = 0; i < freeHandPoints.size() - 1; i++) {
+                    if (freeHandPoints.get(i).x < x1) {
+                        x1 = freeHandPoints.get(i).x;
+                    }
+                    if (freeHandPoints.get(i).x > x2) {
+                        x2 = freeHandPoints.get(i).x;
+                    }
+                    if (freeHandPoints.get(i).y < y1) {
+                        y1 = freeHandPoints.get(i).y;
+                    }
+                    if (freeHandPoints.get(i).y > y2) {
+                        y2 = freeHandPoints.get(i).y;
+                    }
+                }
+                return new Point(
+                        (x1 + x2) / 2, (y1 + y2) / 2);
+            }
+            return new Point(0,0);
         }
     }
 
@@ -91,7 +119,7 @@ public class Model {
 
     public void setClickBegin(Point p) {
         clickBegin = p;
-        notifyObservers();
+        //notifyObservers();
     }
 
     public Point getClickEnd() {
@@ -100,7 +128,7 @@ public class Model {
 
     public void setClickEnd(Point p) {
         clickEnd = p;
-        notifyObservers();
+        //notifyObservers();
     }
 
     public Boolean getDrawMode() {
