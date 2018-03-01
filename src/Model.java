@@ -37,7 +37,7 @@ public class Model {
         public int strokeWidth;
         public boolean selected = false;
         public int translateX = 0, translateY = 0, rotate = 0;
-        public double scaleX = 1, scaleY = 1;
+        public double scaleX = 1, scaleY = 1, shearX = 0, shearY = 0;
         public AffineTransform AT = null;
 
         public CanvasShape(Shape s, drawingModeType dm, Color fc, Color sc, int sw) {

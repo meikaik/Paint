@@ -106,7 +106,6 @@ public class Canvas extends JComponent implements Observer {
         model.addObserver(this);
         // Enable double buffering
         setDoubleBuffered(true);
-        // TODO: Background color
         this.setVisible(true);
     }
 
@@ -122,6 +121,10 @@ public class Canvas extends JComponent implements Observer {
 
         // enable antiliasing
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // First paint a white rectangle as the background
+        g2.setPaint(Color.WHITE);
+        g2.fillRect(0, 0, getSize().width, getSize().height);
 
         for (Model.CanvasShape cs : model.getCanvasShapes()) {
             drawShape(cs, g2);
@@ -237,6 +240,7 @@ public class Canvas extends JComponent implements Observer {
         affineNew.translate(midpoint.x, midpoint.y);
         affineNew.rotate(Math.toRadians(cs.rotate));
         affineNew.scale(cs.scaleX, cs.scaleY);
+        affineNew.shear(cs.shearX, cs.shearY);
         affineNew.translate(-(midpoint.x), -(midpoint.y));
         return affineNew;
     }
@@ -304,7 +308,13 @@ public class Canvas extends JComponent implements Observer {
     }
 
     private boolean checkTranslated(Model.CanvasShape cs) {
-        return cs.rotate != 0 || cs.scaleX != 1 || cs.scaleY != 1 || cs.translateX != 0 || cs.translateY != 0;
+        return cs.rotate != 0 ||
+                cs.scaleX != 1 ||
+                cs.scaleY != 1 ||
+                cs.translateX != 0 ||
+                cs.translateY != 0 ||
+                cs.shearX != 0 ||
+                cs.shearY != 0;
     }
 
     private Point[] getBoundingPoints(Shape s) {

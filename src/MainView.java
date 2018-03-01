@@ -455,7 +455,11 @@ public class MainView extends JFrame implements Observer {
                 new SpinnerNumberModel(selectedShape.scaleX, -10, 10, 0.1));
         JSpinner scaleY = new JSpinner(
                 new SpinnerNumberModel(selectedShape.scaleY, -10, 10, 0.1));
-        JPanel panel = new JPanel(new GridLayout(3, 3));
+        JSpinner shearX = new JSpinner(
+                new SpinnerNumberModel(selectedShape.shearX, -10, 10, 0.1));
+        JSpinner shearY = new JSpinner(
+                new SpinnerNumberModel(selectedShape.shearY, -10, 10, 0.1));
+        JPanel panel = new JPanel(new GridLayout(4, 3));
         JPanel subpanel = new JPanel(new GridLayout(1, 2));
         panel.add(new JLabel("Translate (px):"));
         subpanel.add(new JLabel("                        x:"));
@@ -477,6 +481,15 @@ public class MainView extends JFrame implements Observer {
         subpanel4.add(new JLabel("                        y:"));
         subpanel4.add(scaleY);
         panel.add(subpanel4);
+        panel.add(new JLabel("Shear:"));
+        JPanel subpanel5 = new JPanel(new GridLayout(1, 2));
+        subpanel5.add(new JLabel("                        x:"));
+        subpanel5.add(shearX);
+        panel.add(subpanel5);
+        JPanel subpanel6 = new JPanel(new GridLayout(1, 2));
+        subpanel6.add(new JLabel("                        y:"));
+        subpanel6.add(shearY);
+        panel.add(subpanel6);
         int result = JOptionPane.showConfirmDialog(null, panel, "Transform Shape",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
@@ -485,6 +498,8 @@ public class MainView extends JFrame implements Observer {
             selectedShape.rotate = (int) rotate.getValue();
             selectedShape.scaleX = (double) scaleX.getValue();
             selectedShape.scaleY = (double) scaleY.getValue();
+            selectedShape.shearX = (double) shearX.getValue();
+            selectedShape.shearY = (double) shearY.getValue();
             model.notifyObservers();
         }
     }
