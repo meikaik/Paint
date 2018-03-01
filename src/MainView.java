@@ -14,6 +14,7 @@ public class MainView extends JFrame implements Observer {
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
     // Menubar
+    private JMenuItem restore;
     private JRadioButtonMenuItem selectionMode;
     private JRadioButtonMenuItem drawingMode;
     private JMenuItem deleteShape;
@@ -86,7 +87,11 @@ public class MainView extends JFrame implements Observer {
         // Update stroke width
         strokeWidth.getItem(model.getStrokeThickness() - 1).setSelected(true);
         strokes.setSelectedIndex(model.getStrokeThickness() - 1);
-        }
+
+        // Update restore button
+        restore.setEnabled(model.checkForInputFile());
+
+    }
 
     private void createMenuBar() {
         JMenuBar menubar=new JMenuBar();
@@ -113,6 +118,28 @@ public class MainView extends JFrame implements Observer {
                 model.resetCanvasShapes();
             }
         });
+        JMenuItem save = new JMenuItem("Save");
+        save.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_S, ActionEvent.CTRL_MASK));
+        save.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                model.outputToFile();
+                System.out.println("File successfully output to output.txt");
+                restore.setEnabled(true);
+            }
+        });
+
+        restore = new JMenuItem("Restore");
+        restore.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_R, ActionEvent.CTRL_MASK));
+        restore.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                model.readFromFile();
+                System.out.println("File read from output.txt");
+                repaint();
+            }
+        });
+
+        restore.setEnabled(model.checkForInputFile());
+
 
         JMenuItem exit = new JMenuItem("Exit");
         exit.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
@@ -122,6 +149,8 @@ public class MainView extends JFrame implements Observer {
             }
         });
         file.add(new1);
+        file.add(save);
+        file.add(restore);
         file.add(exit);
         return file;
     }
@@ -130,7 +159,7 @@ public class MainView extends JFrame implements Observer {
         JMenu edit = new JMenu("Edit");
         ButtonGroup radiogroup = new ButtonGroup();
         selectionMode = new JRadioButtonMenuItem("Selection Mode");
-        selectionMode.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_S, ActionEvent.CTRL_MASK));
+        selectionMode.setAccelerator(KeyStroke.getKeyStroke( KeyEvent.VK_Z, ActionEvent.CTRL_MASK));
         radiogroup.add(selectionMode);
 
         drawingMode = new JRadioButtonMenuItem("Drawing Mode", true);

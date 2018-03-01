@@ -133,7 +133,7 @@ public class Canvas extends JComponent implements Observer {
             if (checkTranslated(cs)) {
                 AffineTransform oldAffine = g2.getTransform();
                 AffineTransform newAffine = generateAffine(cs, oldAffine);
-                cs.AT  = generateAffine(cs, null);
+                cs.AT = generateAffine(cs, null);
                 g2.setTransform(newAffine);
                 g2.draw(cs.shape);
                 g2.setPaint(cs.fillColor);
@@ -151,7 +151,7 @@ public class Canvas extends JComponent implements Observer {
                 AffineTransform oldAffine = g2.getTransform();
                 AffineTransform newAffine = generateAffine(cs, oldAffine);
                 g2.setTransform(newAffine);
-                cs.AT  = generateAffine(cs, null);
+                cs.AT = generateAffine(cs, null);
                 drawFreeHandLine(cs.freeHandPoints, g2);
                 drawSelectRectangle(cs, g2);
                 g2.setTransform(oldAffine);

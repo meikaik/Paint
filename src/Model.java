@@ -4,6 +4,7 @@ import java.util.*;
 import java.awt.Color;
 import java.awt.Shape;
 import java.awt.Point;
+import java.io.*;
 
 public class Model {
 
@@ -28,7 +29,7 @@ public class Model {
     private Point clickBegin, clickEnd;
 
     // Create a CanvasShape "struct"
-    public static class CanvasShape {
+    public static class CanvasShape implements Serializable {
         public ArrayList<Point> freeHandPoints = null;
         public Shape shape = null;
         public drawingModeType drawingMode;
@@ -94,6 +95,36 @@ public class Model {
             }
             return new Point[]{new Point(x1, y1), new Point(x2, y2)};
         }
+    }
+
+    public void outputToFile() {
+        try(FileOutputStream f = new FileOutputStream("out/output.txt");
+            ObjectOutput stream = new ObjectOutputStream(f)) {
+            stream.writeObject(canvasShapes);
+            stream.writeObject(canvasShapesSize);
+        }
+        catch(Exception all){
+            System.out.println("Failed output, exception: " + all);
+        }
+    }
+
+    public void readFromFile() {
+        try(FileInputStream in = new FileInputStream("out/output.txt");
+            ObjectInputStream stream = new ObjectInputStream(in)) {
+            canvasShapes = (ArrayList<CanvasShape>) stream.readObject();
+            canvasShapesSize = (int) stream.readObject();
+        }
+        catch(Exception all) {
+            System.out.println("Failed input, exception: " + all);
+        }
+    }
+
+    public boolean checkForInputFile() {
+        File file = new File("out/output.txt");
+        if (file.exists()) {
+            return true;
+        }
+        return false;
     }
 
     public ArrayList<CanvasShape> getCanvasShapes() {
