@@ -17,19 +17,19 @@ public class Model {
     // User selected menubar/toolbar
     private Boolean drawMode = true; // true for Draw mode, false for Select mode
     private drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
-    public int strokeThickness = 1;
-    public Color fillColor = Color.WHITE;
-    public Color strokeColor = Color.BLACK;
+    private int strokeThickness = 1;
+    private Color fillColor = Color.WHITE;
+    private Color strokeColor = Color.BLACK;
     private Boolean deleteTransformOverride = false; // false for no override, true for override make field unclickable
 
     // Canvas
-    private List<CanvasShape> canvasShapes = new ArrayList<>();
+    private ArrayList<CanvasShape> canvasShapes = new ArrayList<>();
     private int canvasShapesSize = 0;
     private Point clickBegin, clickEnd;
 
     // Create a CanvasShape "struct"
     public static class CanvasShape {
-        public List<Point> freeHandPoints = null;
+        public ArrayList<Point> freeHandPoints = null;
         public Shape shape = null;
         public drawingModeType drawingMode;
         public Color fillColor;
@@ -49,7 +49,7 @@ public class Model {
 
         }
 
-        public CanvasShape(List<Point> points, drawingModeType dm, Color fc, Color sc, int sw) {
+        public CanvasShape(ArrayList<Point> points, drawingModeType dm, Color fc, Color sc, int sw) {
             freeHandPoints = points;
             drawingMode = dm;
             fillColor = fc;
@@ -63,33 +63,40 @@ public class Model {
                         (int) (shape.getBounds().getMinX() + shape.getBounds().getMaxX()) / 2,
                         (int) (shape.getBounds().getMinY() + shape.getBounds().getMaxY()) / 2);
             } else if (freeHandPoints != null) {
-                int x1 = Integer.MAX_VALUE;
-                int y1 = Integer.MAX_VALUE;
-                int x2 = Integer.MIN_VALUE;
-                int y2 = Integer.MIN_VALUE;
-
-                for (int i = 0; i < freeHandPoints.size() - 1; i++) {
-                    if (freeHandPoints.get(i).x < x1) {
-                        x1 = freeHandPoints.get(i).x;
-                    }
-                    if (freeHandPoints.get(i).x > x2) {
-                        x2 = freeHandPoints.get(i).x;
-                    }
-                    if (freeHandPoints.get(i).y < y1) {
-                        y1 = freeHandPoints.get(i).y;
-                    }
-                    if (freeHandPoints.get(i).y > y2) {
-                        y2 = freeHandPoints.get(i).y;
-                    }
-                }
+                Point[] pointArray = getFreehandMinMax();
+                Point p1 = pointArray[0];
+                Point p2 = pointArray[1];
                 return new Point(
-                        (x1 + x2) / 2, (y1 + y2) / 2);
+                        (p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
             }
             return new Point(0,0);
         }
+
+        public Point[] getFreehandMinMax() {
+            int x1 = Integer.MAX_VALUE;
+            int y1 = Integer.MAX_VALUE;
+            int x2 = Integer.MIN_VALUE;
+            int y2 = Integer.MIN_VALUE;
+
+            for (int i = 0; i < freeHandPoints.size() - 1; i++) {
+                if (freeHandPoints.get(i).x < x1) {
+                    x1 = freeHandPoints.get(i).x;
+                }
+                if (freeHandPoints.get(i).x > x2) {
+                    x2 = freeHandPoints.get(i).x;
+                }
+                if (freeHandPoints.get(i).y < y1) {
+                    y1 = freeHandPoints.get(i).y;
+                }
+                if (freeHandPoints.get(i).y > y2) {
+                    y2 = freeHandPoints.get(i).y;
+                }
+            }
+            return new Point[]{new Point(x1, y1), new Point(x2, y2)};
+        }
     }
 
-    public List<CanvasShape> getCanvasShapes() {
+    public ArrayList<CanvasShape> getCanvasShapes() {
         return canvasShapes;
     }
 
@@ -119,7 +126,6 @@ public class Model {
 
     public void setClickBegin(Point p) {
         clickBegin = p;
-        //notifyObservers();
     }
 
     public Point getClickEnd() {
@@ -128,7 +134,6 @@ public class Model {
 
     public void setClickEnd(Point p) {
         clickEnd = p;
-        //notifyObservers();
     }
 
     public Boolean getDrawMode() {
@@ -182,6 +187,14 @@ public class Model {
 
     public void setDeleteTransformOverride(Boolean bool) {
         deleteTransformOverride = bool;
+        notifyObservers();
+    }
+
+    public void setSelected(boolean dtOverride, int sw, Color sc, Color fc) {
+        deleteTransformOverride = dtOverride;
+        strokeThickness = sw;
+        strokeColor = sc;
+        fillColor = fc;
         notifyObservers();
     }
 

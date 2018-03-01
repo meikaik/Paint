@@ -25,7 +25,7 @@ public class Canvas extends JComponent implements Observer {
                 }
                 if (model.getDrawMode()) {
                     if (model.getDrawingMode() == Model.drawingModeType.FREEFORM) {
-                        java.util.List<Point> freeHandPoints = new ArrayList<>();
+                        ArrayList<Point> freeHandPoints = new ArrayList<>();
                         freeHandPoints.add(model.getClickBegin());
                         Model.CanvasShape cs = new Model.CanvasShape(
                                 freeHandPoints,
@@ -38,7 +38,7 @@ public class Canvas extends JComponent implements Observer {
                     repaint();
                 } else {
                     // perform hit test
-                    java.util.List<Model.CanvasShape> shapesArray = model.getCanvasShapes();
+                    ArrayList<Model.CanvasShape> shapesArray = model.getCanvasShapes();
                     ListIterator<Model.CanvasShape> it = shapesArray.listIterator(shapesArray.size());
                     model.setDeleteTransformOverride(true);
                     while(it.hasPrevious()) {
@@ -46,10 +46,7 @@ public class Canvas extends JComponent implements Observer {
                         if (hitTest(cs, model.getClickBegin(), 5 + cs.strokeWidth)) {
                             System.out.println("****** HIT ******");
                             cs.selected = true;
-                            model.setDeleteTransformOverride(false);
-                            model.strokeThickness = (cs.strokeWidth);
-                            model.strokeColor = (cs.strokeColor);
-                            model.setFillColor(cs.fillColor);
+                            model.setSelected(false, cs.strokeWidth, cs.strokeColor, cs.fillColor);
                             break;
                         }
                     }
@@ -75,7 +72,6 @@ public class Canvas extends JComponent implements Observer {
                         case FREEFORM:
                             model.getCanvasShapes().get(model.getCanvasShapesSize()).freeHandPoints.add(clickEnd);
                             break;
-
                     }
                     if (model.getDrawingMode() != Model.drawingModeType.FREEFORM) {
                         Model.CanvasShape cs = new Model.CanvasShape(
@@ -102,26 +98,28 @@ public class Canvas extends JComponent implements Observer {
                         // Add the intermediate point to the freeform point model
                         model.getCanvasShapes().get(model.getCanvasShapesSize()).freeHandPoints.add(model.getClickEnd());
                     }
-                    repaint(); // added this to avoid calling notify observers when adding to freeform
+                    repaint();
                 }
                 System.out.println("mouse dragged");
             }
         });
         model.addObserver(this);
+        // Enable double buffering
+        setDoubleBuffered(true);
         // TODO: Background color
         this.setVisible(true);
     }
 
     public void update(Object observable) {
-        // XXX Fill this in with the logic for updating the view when the model
-        // changes.
         System.out.println("Canvas Model changed!");
         repaint();
     }
 
     public void paint(Graphics g) {
         System.out.println("Paint called");
+
         Graphics2D g2 = (Graphics2D) g;
+
         // enable antiliasing
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -136,7 +134,7 @@ public class Canvas extends JComponent implements Observer {
         g2.setStroke(new BasicStroke(cs.strokeWidth));
         g2.setPaint(cs.strokeColor);
         if (cs.shape != null) {
-            if (cs.rotate != 0 || cs.scaleX != 1 || cs.scaleY != 1 || cs.translateX != 0 || cs.translateY != 0) {
+            if (checkTranslated(cs)) {
                 AffineTransform oldAffine = g2.getTransform();
                 AffineTransform newAffine = generateAffine(cs, oldAffine);
                 cs.AT  = generateAffine(cs, null);
@@ -152,34 +150,18 @@ public class Canvas extends JComponent implements Observer {
                 g2.fill(cs.shape);
                 drawSelectRectangle(cs, g2);
             }
-
         } else if (cs.freeHandPoints != null) {
-            if (cs.rotate != 0 || cs.scaleX != 1 || cs.scaleY != 1 || cs.translateX != 0 || cs.translateY != 0) {
+            if (checkTranslated(cs)) {
                 AffineTransform oldAffine = g2.getTransform();
                 AffineTransform newAffine = generateAffine(cs, oldAffine);
                 g2.setTransform(newAffine);
                 cs.AT  = generateAffine(cs, null);
-                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
-                    g2.drawLine(
-                            cs.freeHandPoints.get(i).x,
-                            cs.freeHandPoints.get(i).y,
-                            cs.freeHandPoints.get(i + 1).x,
-                            cs.freeHandPoints.get(i + 1).y
-                    );
-                }
+                drawFreeHandLine(cs.freeHandPoints, g2);
                 drawSelectRectangle(cs, g2);
                 g2.setTransform(oldAffine);
             } else {
-                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
-                    g2.drawLine(
-                            cs.freeHandPoints.get(i).x,
-                            cs.freeHandPoints.get(i).y,
-                            cs.freeHandPoints.get(i + 1).x,
-                            cs.freeHandPoints.get(i + 1).y
-                    );
-                }
+                drawFreeHandLine(cs.freeHandPoints, g2);
                 drawSelectRectangle(cs, g2);
-
             }
         }
     }
@@ -189,59 +171,21 @@ public class Canvas extends JComponent implements Observer {
         if (cs.selected) {
             g2.setStroke(new BasicStroke(1));
             g2.setPaint(Color.CYAN);
+            Point[] pointArray = null;
             if (cs.shape != null) {
-                int x1 = 0;
-                int x2 = 0;
-                int y1 = 0;
-                int y2 = 0;
-                // TODO: refactor this
-                if (cs.shape instanceof Rectangle2D) {
-                    x1 = (int) ((Rectangle2D) cs.shape).getX();
-                    y1 = (int) ((Rectangle2D) cs.shape).getY();
-                    int width = (int) ((Rectangle2D) cs.shape).getWidth();
-                    int height = (int) ((Rectangle2D) cs.shape).getHeight();
-                    x2 = x1 + width;
-                    y2 = y1 + height;
-                } else if (cs.shape instanceof Ellipse2D) {
-                    x1 = (int) ((Ellipse2D) cs.shape).getX();
-                    y1 = (int) ((Ellipse2D) cs.shape).getY();
-                    int width = (int) ((Ellipse2D) cs.shape).getWidth();
-                    int height = (int) ((Ellipse2D) cs.shape).getHeight();
-                    x2 = x1 + width;
-                    y2 = y1 + height;
-                } else if (cs.shape instanceof Line2D) {
-                    x1 = (int) ((Line2D) cs.shape).getX1();
-                    y1 = (int) ((Line2D) cs.shape).getY1();
-                    x2 = (int) ((Line2D) cs.shape).getX2();
-                    y2 = (int) ((Line2D) cs.shape).getY2();
-                }
-                Rectangle.Float rect = drawRectangle(
-                        Math.min(x1, x2) - 10,
-                        Math.min(y1, y2) - 10,
-                        Math.max(x1, x2) + 10,
-                        Math.max(y1, y2) + 10);
-                g2.draw(rect);
-            } else if (cs.freeHandPoints != null) {
-                int x1 = Integer.MAX_VALUE;
-                int y1 = Integer.MAX_VALUE;
-                int x2 = Integer.MIN_VALUE;
-                int y2 = Integer.MIN_VALUE;
+                pointArray = getBoundingPoints(cs.shape);
 
-                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
-                    if (cs.freeHandPoints.get(i).x < x1) {
-                        x1 = cs.freeHandPoints.get(i).x;
-                    }
-                    if (cs.freeHandPoints.get(i).x > x2) {
-                        x2 = cs.freeHandPoints.get(i).x;
-                    }
-                    if (cs.freeHandPoints.get(i).y < y1) {
-                        y1 = cs.freeHandPoints.get(i).y;
-                    }
-                    if (cs.freeHandPoints.get(i).y > y2) {
-                        y2 = cs.freeHandPoints.get(i).y;
-                    }
-                }
-                Rectangle.Float rect = drawRectangle(x1 - 10, y1 - 10, x2 + 10, y2 + 10);
+            } else if (cs.freeHandPoints != null) {
+                pointArray = cs.getFreehandMinMax();
+            }
+            if (cs.shape != null || cs.freeHandPoints != null) {
+                Point p1 = pointArray[0];
+                Point p2 = pointArray[1];
+                Rectangle.Float rect = drawRectangle(
+                        Math.min(p1.x, p2.x) - 10,
+                        Math.min(p1.y, p2.y) - 10,
+                        Math.max(p1.x, p2.x) + 10,
+                        Math.max(p1.y, p2.y) + 10);
                 g2.draw(rect);
             }
         }
@@ -297,11 +241,10 @@ public class Canvas extends JComponent implements Observer {
         return affineNew;
     }
 
-    private Boolean hitTest(Model.CanvasShape cs, Point mouse, int threshold) {
+    private boolean hitTest(Model.CanvasShape cs, Point mouse, int threshold) {
         Point mouseTransformed = new Point();
         try {
-            // TODO: refactor this if statement
-            if (cs.AT != null && (cs.rotate != 0 || cs.scaleX != 1 || cs.scaleY != 1 || cs.translateX != 0 || cs.translateY != 0)) {
+            if (checkTranslated(cs)) {
                 AffineTransform	IAT	= cs.AT.createInverse();
                 IAT.transform(mouse, mouseTransformed);
             } else {
@@ -315,18 +258,7 @@ public class Canvas extends JComponent implements Observer {
                 }
             }
             else if (cs.freeHandPoints != null) {
-                for (int i = 0; i < cs.freeHandPoints.size() - 1; i++) {
-                    double d2 = Line2D.ptSegDist(
-                            cs.freeHandPoints.get(i).x,
-                            cs.freeHandPoints.get(i).y,
-                            cs.freeHandPoints.get(i + 1).x,
-                            cs.freeHandPoints.get(i + 1).y,
-                            mouseTransformed.x,
-                            mouseTransformed.y);
-                    if (d2 < threshold) {
-                        return true;
-                    }
-                }
+                return freeFormHitTest(cs.freeHandPoints, mouseTransformed, threshold);
             }
 
         } catch (NoninvertibleTransformException e) {
@@ -335,7 +267,7 @@ public class Canvas extends JComponent implements Observer {
         return false;
     }
 
-    private Boolean lineHitTest(Line2D.Float s, Point mouse, int threshold) {
+    private boolean lineHitTest(Line2D.Float s, Point mouse, int threshold) {
         double d2 = s.ptSegDist(mouse);
         if (d2 < threshold + model.getStrokeThickness()) {
             return true;
@@ -343,7 +275,7 @@ public class Canvas extends JComponent implements Observer {
         return false;
     }
 
-    private Boolean polyHitTest(Shape s, Point mouse, int threshold) {
+    private boolean polyHitTest(Shape s, Point mouse, int threshold) {
         return s.contains(mouse.x, mouse.y) ||
                 s.contains(mouse.x + threshold, mouse.y) ||
                 s.contains(mouse.x, mouse.y + threshold) ||
@@ -354,5 +286,65 @@ public class Canvas extends JComponent implements Observer {
                 s.contains(mouse.x + threshold, mouse.y - threshold) ||
                 s.contains(mouse.x - threshold, mouse.y + threshold);
     }
+
+    private boolean freeFormHitTest(ArrayList<Point> freeHandPoints, Point mouse, int threshold) {
+        for (int i = 0; i < freeHandPoints.size() - 1; i++) {
+            double d2 = Line2D.ptSegDist(
+                    freeHandPoints.get(i).x,
+                    freeHandPoints.get(i).y,
+                    freeHandPoints.get(i + 1).x,
+                    freeHandPoints.get(i + 1).y,
+                    mouse.x,
+                    mouse.y);
+            if (d2 < threshold) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkTranslated(Model.CanvasShape cs) {
+        return cs.rotate != 0 || cs.scaleX != 1 || cs.scaleY != 1 || cs.translateX != 0 || cs.translateY != 0;
+    }
+
+    private Point[] getBoundingPoints(Shape s) {
+        int x1 = 0;
+        int x2 = 0;
+        int y1 = 0;
+        int y2 = 0;
+        if (s instanceof Rectangle2D) {
+            x1 = (int) ((Rectangle2D) s).getX();
+            y1 = (int) ((Rectangle2D) s).getY();
+            int width = (int) ((Rectangle2D) s).getWidth();
+            int height = (int) ((Rectangle2D) s).getHeight();
+            x2 = x1 + width;
+            y2 = y1 + height;
+        } else if (s instanceof Ellipse2D) {
+            x1 = (int) ((Ellipse2D) s).getX();
+            y1 = (int) ((Ellipse2D) s).getY();
+            int width = (int) ((Ellipse2D) s).getWidth();
+            int height = (int) ((Ellipse2D) s).getHeight();
+            x2 = x1 + width;
+            y2 = y1 + height;
+        } else if (s instanceof Line2D) {
+            x1 = (int) ((Line2D) s).getX1();
+            y1 = (int) ((Line2D) s).getY1();
+            x2 = (int) ((Line2D) s).getX2();
+            y2 = (int) ((Line2D) s).getY2();
+        }
+        return new Point[]{new Point(x1, y1), new Point(x2, y2)};
+    }
+
+    private void drawFreeHandLine(ArrayList<Point> freeHandPoints, Graphics2D g2){
+        for (int i = 0; i < freeHandPoints.size() - 1; i++) {
+            g2.drawLine(
+                    freeHandPoints.get(i).x,
+                    freeHandPoints.get(i).y,
+                    freeHandPoints.get(i + 1).x,
+                    freeHandPoints.get(i + 1).y
+            );
+        }
+    }
+
 
 }

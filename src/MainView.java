@@ -12,7 +12,7 @@ public class MainView extends JFrame implements Observer {
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
     private BufferedImage strokeColorImage =
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
-
+    // TODO: fix bug where when a shape is selected it takes on the attributes of the model
     // Menubar
     private JRadioButtonMenuItem selectionMode;
     private JRadioButtonMenuItem drawingMode;
