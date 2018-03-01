@@ -12,7 +12,6 @@ public class MainView extends JFrame implements Observer {
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
     private BufferedImage strokeColorImage =
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
-    // TODO: fix bug where when a shape is selected it takes on the attributes of the model
     // Menubar
     private JRadioButtonMenuItem selectionMode;
     private JRadioButtonMenuItem drawingMode;
@@ -355,27 +354,27 @@ public class MainView extends JFrame implements Observer {
         JComboBox strokes = new JComboBox<>(strokeThickness);
         strokes.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
-                // TODO: refactor
-                String temp = (String) strokes.getSelectedItem();
-                int tempp = 0;
-                if (temp == "10px") {
-                    tempp = 10;
+                String dropdownVal = (String) strokes.getSelectedItem();
+                int dropdownNumerical;
+                if (dropdownVal == "10px") {
+                    dropdownNumerical = 10;
                 }
                 else {
-                    tempp = Character.getNumericValue(temp.charAt(0));
+                    dropdownNumerical = Character.getNumericValue(dropdownVal.charAt(0));
                 }
-                if ( model.getStrokeThickness() != tempp) {
-                    updateStrokeThickness(temp);
-                }
-                // TODO: Refactor this... its so ugly
-                for (Model.CanvasShape cs : model.getCanvasShapes()) {
-                    if (cs.selected) {
-                        if ("10px" == temp) {
-                            cs.strokeWidth = 10;
-                        }
-                        else {
-                            int val = Character.getNumericValue(temp.charAt(0));
-                            cs.strokeWidth = val;
+                // We only want to update the values if the model and dropdown values are not the same
+                // This is an issue with JComboBox, essentially the Listener fires actions way too often
+                //   so we must filter the actions
+                if ( model.getStrokeThickness() != dropdownNumerical) {
+                    updateStrokeThickness(dropdownVal);
+                    for (Model.CanvasShape cs : model.getCanvasShapes()) {
+                        if (cs.selected) {
+                            if ("10px" == dropdownVal) {
+                                cs.strokeWidth = 10;
+                            } else {
+                                int val = Character.getNumericValue(dropdownVal.charAt(0));
+                                cs.strokeWidth = val;
+                            }
                         }
                     }
                 }

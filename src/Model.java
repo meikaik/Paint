@@ -15,12 +15,12 @@ public class Model {
     private List<Observer> observers;
 
     // User selected menubar/toolbar
-    private Boolean drawMode = true; // true for Draw mode, false for Select mode
+    private boolean drawMode = true; // true for Draw mode, false for Select mode
     private drawingModeType drawingMode = drawingModeType.FREEFORM; // any of FREEFORM, STRAIGHT, RECTANGLE, ELLIPSE
     private int strokeThickness = 1;
     private Color fillColor = Color.WHITE;
     private Color strokeColor = Color.BLACK;
-    private Boolean deleteTransformOverride = false; // false for no override, true for override make field unclickable
+    private boolean deleteTransformOverride = false; // false for no override, true for override make field unclickable
 
     // Canvas
     private ArrayList<CanvasShape> canvasShapes = new ArrayList<>();
@@ -136,7 +136,7 @@ public class Model {
         clickEnd = p;
     }
 
-    public Boolean getDrawMode() {
+    public boolean getDrawMode() {
         return drawMode;
     }
 
@@ -181,11 +181,11 @@ public class Model {
         notifyObservers();
     }
 
-    public Boolean getdeleteTransformOverride() {
+    public boolean getdeleteTransformOverride() {
         return deleteTransformOverride;
     }
 
-    public void setDeleteTransformOverride(Boolean bool) {
+    public void setDeleteTransformOverride(boolean bool) {
         deleteTransformOverride = bool;
         notifyObservers();
     }
