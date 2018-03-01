@@ -127,23 +127,26 @@ public class Canvas extends JComponent implements Observer {
     }
 
     private void drawShape(Model.CanvasShape cs, Graphics2D g2) {
-        g2.setStroke(new BasicStroke(cs.strokeWidth));
-        g2.setPaint(cs.strokeColor);
         if (cs.shape != null) {
             if (checkTranslated(cs)) {
                 AffineTransform oldAffine = g2.getTransform();
                 AffineTransform newAffine = generateAffine(cs, oldAffine);
                 cs.AT = generateAffine(cs, null);
                 g2.setTransform(newAffine);
-                g2.draw(cs.shape);
                 g2.setPaint(cs.fillColor);
                 g2.fill(cs.shape);
+                g2.setStroke(new BasicStroke(cs.strokeWidth));
+                g2.setPaint(cs.strokeColor);
+                g2.draw(cs.shape);
                 drawSelectRectangle(cs, g2);
                 g2.setTransform(oldAffine);
             } else {
                 g2.draw(cs.shape);
                 g2.setPaint(cs.fillColor);
                 g2.fill(cs.shape);
+                g2.setStroke(new BasicStroke(cs.strokeWidth));
+                g2.setPaint(cs.strokeColor);
+                g2.draw(cs.shape);
                 drawSelectRectangle(cs, g2);
             }
         } else if (cs.freeHandPoints != null) {
@@ -152,10 +155,14 @@ public class Canvas extends JComponent implements Observer {
                 AffineTransform newAffine = generateAffine(cs, oldAffine);
                 g2.setTransform(newAffine);
                 cs.AT = generateAffine(cs, null);
+                g2.setStroke(new BasicStroke(cs.strokeWidth));
+                g2.setPaint(cs.strokeColor);
                 drawFreeHandLine(cs.freeHandPoints, g2);
                 drawSelectRectangle(cs, g2);
                 g2.setTransform(oldAffine);
             } else {
+                g2.setStroke(new BasicStroke(cs.strokeWidth));
+                g2.setPaint(cs.strokeColor);
                 drawFreeHandLine(cs.freeHandPoints, g2);
                 drawSelectRectangle(cs, g2);
             }
