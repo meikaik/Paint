@@ -12,7 +12,6 @@ public class Canvas extends JComponent implements Observer {
     private Model model;
 
     public Canvas(Model model) {
-        System.out.println("Canvas called");
         this.model = model;
         this.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
@@ -44,14 +43,12 @@ public class Canvas extends JComponent implements Observer {
                     while(it.hasPrevious()) {
                         Model.CanvasShape cs = it.previous();
                         if (hitTest(cs, model.getClickBegin(), 5 + cs.strokeWidth)) {
-                            System.out.println("****** HIT ******");
                             cs.selected = true;
                             model.setSelected(false, cs.strokeWidth, cs.strokeColor, cs.fillColor);
                             break;
                         }
                     }
                 }
-                System.out.println("mouse pressed");
             }
 
             public void mouseReleased(MouseEvent e) {
@@ -86,7 +83,6 @@ public class Canvas extends JComponent implements Observer {
                     model.setClickBegin(null);
                     model.setClickEnd(null);
                 }
-                System.out.println("mouse released");
             }
         });
 
@@ -100,7 +96,6 @@ public class Canvas extends JComponent implements Observer {
                     }
                     repaint();
                 }
-                System.out.println("mouse dragged");
             }
         });
         model.addObserver(this);
@@ -110,12 +105,10 @@ public class Canvas extends JComponent implements Observer {
     }
 
     public void update(Object observable) {
-        System.out.println("Canvas Model changed!");
         repaint();
     }
 
     public void paint(Graphics g) {
-        System.out.println("Paint called");
 
         Graphics2D g2 = (Graphics2D) g;
 
@@ -230,7 +223,7 @@ public class Canvas extends JComponent implements Observer {
 
     private AffineTransform generateAffine(Model.CanvasShape cs, AffineTransform affine) {
         Point midpoint = cs.getMidPoint();
-        AffineTransform affineNew = null;
+        AffineTransform affineNew;
         if (affine == null) {
             affineNew = new AffineTransform();
         } else {
@@ -273,10 +266,7 @@ public class Canvas extends JComponent implements Observer {
 
     private boolean lineHitTest(Line2D.Float s, Point mouse, int threshold) {
         double d2 = s.ptSegDist(mouse);
-        if (d2 < threshold + model.getStrokeThickness()) {
-            return true;
-        }
-        return false;
+        return d2 < threshold + model.getStrokeThickness();
     }
 
     private boolean polyHitTest(Shape s, Point mouse, int threshold) {

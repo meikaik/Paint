@@ -12,6 +12,7 @@ public class MainView extends JFrame implements Observer {
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
     private BufferedImage strokeColorImage =
             new BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
     // Menubar
     private JRadioButtonMenuItem selectionMode;
     private JRadioButtonMenuItem drawingMode;
@@ -24,7 +25,6 @@ public class MainView extends JFrame implements Observer {
     // Toolbar
     private JButton selectButton;
     private JButton drawButton;
-    private JComboBox drawingModes;
     private JComboBox strokes;
     private JButton fillColorButton;
     private JButton strokeColorButton;
@@ -54,10 +54,8 @@ public class MainView extends JFrame implements Observer {
     public void update(Object observable) {
         // XXX Fill this in with the logic for updating the view when the model
         // changes.
-        System.out.println("Model changed!");
 
         // Update draw modes
-        System.out.println("Draw mode? " + model.getDrawMode());
         selectButton.setSelected(!model.getDrawMode());
         selectionMode.setSelected(!model.getDrawMode());
         drawButton.setSelected(model.getDrawMode());
@@ -210,7 +208,6 @@ public class MainView extends JFrame implements Observer {
         ActionListener radioActionListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 AbstractButton button = (AbstractButton) e.getSource();
-                // TODO: Refactor this... its so ugly
                 for (Model.CanvasShape cs : model.getCanvasShapes()) {
                     if (cs.selected) {
                         if ("10px" == button.getText()) {
@@ -242,18 +239,9 @@ public class MainView extends JFrame implements Observer {
         fillColor = new JMenuItem("Fill Colour...", fill);
         fillColor.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
-                Color newColor = JColorChooser.showDialog(null, "Choose Fill Colour", model.getFillColor());
-                if (newColor != null) {
-                    model.setFillColor(newColor);
-                }
-                System.out.println("New fill color: " + model.getFillColor());
+                openFillColorDialog();
                 fillColor.setIcon(changeColor(fillColorImage, model.getFillColor()));
 
-                for (Model.CanvasShape cs : model.getCanvasShapes()) {
-                    if (cs.selected) {
-                        cs.fillColor = model.getFillColor();
-                    }
-                }
             }
         });
         return fillColor;
@@ -264,18 +252,9 @@ public class MainView extends JFrame implements Observer {
         strokeColor = new JMenuItem("Stroke Colour...", stroke);
         strokeColor.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
-                Color newColor = JColorChooser.showDialog(null, "Choose Stroke Colour", model.getStrokeColor());
-                if (newColor != null) {
-                    model.setStrokeColor(newColor);
-                }
-                System.out.println("New stroke color: " + model.getStrokeColor());
+                openStrokeColorDialog();
                 strokeColor.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
 
-                for (Model.CanvasShape cs : model.getCanvasShapes()) {
-                    if (cs.selected) {
-                        cs.strokeColor = model.getStrokeColor();
-                    }
-                }
             }
         });
         return strokeColor;
@@ -309,7 +288,7 @@ public class MainView extends JFrame implements Observer {
             }
         });
 
-        drawingModes = addDrawingModesDropdown();
+        JComboBox drawingModes = addDrawingModesDropdown();
         strokes = addStrokesDropdown();
         JButton fillColor = addFillColorButton();
         JButton strokeColor = addStrokeColorButton();
@@ -343,7 +322,6 @@ public class MainView extends JFrame implements Observer {
                         model.setDrawingMode(Model.drawingModeType.ELLIPSE);
                         break;
                 }
-                System.out.println("Drawing mode is now: " + model.getDrawingMode());
             }
         });
         return drawingModes;
@@ -356,7 +334,7 @@ public class MainView extends JFrame implements Observer {
             public void actionPerformed(ActionEvent e){
                 String dropdownVal = (String) strokes.getSelectedItem();
                 int dropdownNumerical;
-                if (dropdownVal == "10px") {
+                if (dropdownVal.equals("10px")) {
                     dropdownNumerical = 10;
                 }
                 else {
@@ -372,8 +350,7 @@ public class MainView extends JFrame implements Observer {
                             if ("10px" == dropdownVal) {
                                 cs.strokeWidth = 10;
                             } else {
-                                int val = Character.getNumericValue(dropdownVal.charAt(0));
-                                cs.strokeWidth = val;
+                                cs.strokeWidth = Character.getNumericValue(dropdownVal.charAt(0));
                             }
                         }
                     }
@@ -388,18 +365,9 @@ public class MainView extends JFrame implements Observer {
         fillColorButton = new JButton("Fill Colour", fill);
         fillColorButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
-                Color newColor = JColorChooser.showDialog(null, "Choose Fill Colour", model.getFillColor());
-                if (newColor != null) {
-                    model.setFillColor(newColor);
-                }
-                System.out.println("New fill color: " + model.getFillColor());
+                openFillColorDialog();
                 fillColorButton.setIcon(changeColor(fillColorImage, model.getFillColor()));
 
-                for (Model.CanvasShape cs : model.getCanvasShapes()) {
-                    if (cs.selected) {
-                        cs.fillColor = model.getFillColor();
-                    }
-                }
             }
         });
         return fillColorButton;
@@ -410,30 +378,45 @@ public class MainView extends JFrame implements Observer {
         strokeColorButton = new JButton("Stroke Colour", stroke);
         strokeColorButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e){
-                Color newColor = JColorChooser.showDialog(null, "Choose Stroke Colour", model.getStrokeColor());
-                if (newColor != null) {
-                    model.setStrokeColor(newColor);
-                }
-                System.out.println("New stroke color: " + model.getStrokeColor());
+                openStrokeColorDialog();
                 strokeColorButton.setIcon(changeColor(strokeColorImage, model.getStrokeColor()));
 
-                for (Model.CanvasShape cs : model.getCanvasShapes()) {
-                    if (cs.selected) {
-                        cs.strokeColor = model.getStrokeColor();
-                    }
-                }
             }
         });
         return strokeColorButton;
     }
 
     private void updateStrokeThickness(String selectedStrokeThickness) {
-        if ("10px" == selectedStrokeThickness) {
+        if ("10px".equals(selectedStrokeThickness)) {
             model.setStrokeThickness(10);
         }
         else {
             int val = Character.getNumericValue(selectedStrokeThickness.charAt(0));
             model.setStrokeThickness(val);
+        }
+    }
+
+    private void openFillColorDialog() {
+        Color newColor = JColorChooser.showDialog(null, "Choose Fill Colour", model.getFillColor());
+        if (newColor != null) {
+            model.setFillColor(newColor);
+        }
+        for (Model.CanvasShape cs : model.getCanvasShapes()) {
+            if (cs.selected) {
+                cs.fillColor = model.getFillColor();
+            }
+        }
+    }
+
+    private void openStrokeColorDialog() {
+        Color newColor = JColorChooser.showDialog(null, "Choose Stroke Colour", model.getStrokeColor());
+        if (newColor != null) {
+            model.setStrokeColor(newColor);
+        }
+        for (Model.CanvasShape cs : model.getCanvasShapes()) {
+            if (cs.selected) {
+                cs.strokeColor = model.getStrokeColor();
+            }
         }
     }
 
@@ -508,7 +491,6 @@ public class MainView extends JFrame implements Observer {
         graphics.setPaint(color);
         graphics.fillRect(0, 0, 16, 16);
         image.flush();
-        ImageIcon icon = new ImageIcon(image);
-        return icon;
+        return new ImageIcon(image);
     }
 }
